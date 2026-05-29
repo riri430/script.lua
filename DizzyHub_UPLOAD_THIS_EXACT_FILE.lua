@@ -1,6 +1,7 @@
-__DIZZY_UPLOAD_VERSION = "AR_BLUE_SAFE_NORESPAWN_FIX_LOADFIX_LOCAL_LIMIT"
+__DIZZY_UPLOAD_VERSION = "STABLE_REPAIR_BAT_AR_BLUE_RESPAWN"
 __DIZZY_JUMP_CACHE = __DIZZY_JUMP_CACHE or {UntilTime = 0, Result = false, LastStatusTime = 0, LastDeepScanTime = 0}
 __DIZZY_DROP_SUPPRESS_TOOL_UNTIL = __DIZZY_DROP_SUPPRESS_TOOL_UNTIL or 0
+DIZZY_ACTIVE_BLUE = DIZZY_ACTIVE_BLUE or Color3.fromRGB(15, 45, 120)
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -15,7 +16,6 @@ local screenGui
 local mainFrame
 local statusLabel
 local BUTTON_BLACK = Color3.fromRGB(0, 0, 0)
-ACTIVE_BUTTON_BLUE = Color3.fromRGB(18, 42, 95)
 local PANEL_COLOR = Color3.fromRGB(25, 25, 30)
 local LEFT_COLOR = Color3.fromRGB(32, 32, 40)
 local RIGHT_COLOR = Color3.fromRGB(36, 36, 44)
@@ -50,14 +50,14 @@ local fixedAutoParts = {}
 local batAimbotEnabled = false
 local batTargetPlayer = nil
 
-local BAT_FLY_SPEED = 58
-local BAT_START_BOOST_SPEED = 50
-local BAT_FOLLOW_DISTANCE = 1.4
+local BAT_FLY_SPEED = 72
+local BAT_START_BOOST_SPEED = 75
+local BAT_FOLLOW_DISTANCE = 1.15
 local BAT_TOO_CLOSE_DISTANCE = 0.9
 local BAT_STOP_DISTANCE = 0.6
 local BAT_FOLLOW_HEIGHT = 0.15
 local BAT_PREDICTION = 0.12
-local BAT_RESPONSE = 22
+local BAT_RESPONSE = 30
 local BAT_TARGET_VELOCITY_MULTIPLIER = 0.9
 
 local jumpEnabled = false
@@ -1053,6 +1053,14 @@ local function startBatAimbot()
 
 	batAimbotEnabled = true
 
+	if screenGui then
+		local now = os.clock()
+		screenGui:SetAttribute("BatCounterBusyUntil", now + 0.7)
+		screenGui:SetAttribute("CounterLockUntil", now + 0.7)
+		screenGui:SetAttribute("CounterLockTool", "BatAimbot")
+		screenGui:SetAttribute("MedusaCounterLastTime", now)
+	end
+
 	if humanoid then
 		humanoid.PlatformStand = false
 		humanoid.AutoRotate = true
@@ -1113,6 +1121,7 @@ local function updateBatAimbot()
 	end
 
 	humanoid.PlatformStand = false
+	humanoid.Sit = false
 	humanoid.AutoRotate = true
 	humanoid.WalkSpeed = DEFAULT_WALK_SPEED
 
@@ -1164,6 +1173,10 @@ local function updateBatAimbot()
 
 	if finalVelocity.Magnitude > BAT_FLY_SPEED then
 		finalVelocity = finalVelocity.Unit * BAT_FLY_SPEED
+	end
+
+	if toDesired.Magnitude > 0.1 then
+		humanoid:Move(Vector3.new(toDesired.Unit.X, 0, toDesired.Unit.Z), false)
 	end
 
 	humanoidRootPart.AssemblyLinearVelocity = finalVelocity
@@ -1266,8 +1279,9 @@ local function reEquipLastHeldTool()
 	if backpack and lastHeldTool.Parent == backpack then
 		pcall(function()
 			lastHeldTool.CanBeDropped = false
-			humanoid:EquipTool(lastHeldTool)
 		end)
+
+		return
 	end
 end
 
@@ -2321,6 +2335,10 @@ local function enableLocalRespawnSoftener()
 	end)
 
 	pcall(function()
+		humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, true)
+	end)
+
+	pcall(function()
 		humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
 	end)
 
@@ -3285,6 +3303,10 @@ local function shouldCancelKnockback()
 		return false
 	end
 
+	if batAimbotEnabled or autoMoving then
+		return false
+	end
+
 	if os.clock() - lastDownTime < 0.35 then
 		return false
 	end
@@ -3895,6 +3917,8 @@ local function createGui()
 
 	screenGui:SetAttribute("BatCounterLastHealth", -1)
 	screenGui:SetAttribute("BatCounterLastTime", 0)
+	screenGui:SetAttribute("CounterLockUntil", 0)
+	screenGui:SetAttribute("CounterLockTool", "")
 
 	task.spawn(function()
 		for _ = 1, 30 do
@@ -4372,56 +4396,44 @@ end)
 	end
 
 	updateFloatingButtons = function()
-		local function setFloatingActive(button, active)
-			if button and button.Parent then
-				button.BackgroundColor3 = active and ACTIVE_BUTTON_BLUE or BUTTON_BLACK
-			end
-		end
-
 		if floatingButtons.AutoLeft then
-			local active = autoMoving and currentAutoSide == "Left"
-			floatingButtons.AutoLeft.Text = active and "STOP\nLEFT" or "AUTO\nLEFT"
-			setFloatingActive(floatingButtons.AutoLeft, active)
+			floatingButtons.AutoLeft.Text = (autoMoving and currentAutoSide == "Left") and "STOP\nLEFT" or "AUTO\nLEFT"
+			floatingButtons.AutoLeft.BackgroundColor3 = (autoMoving and currentAutoSide == "Left") and DIZZY_ACTIVE_BLUE or BUTTON_BLACK
 		end
 
 		if floatingButtons.AutoRight then
-			local active = autoMoving and currentAutoSide == "Right"
-			floatingButtons.AutoRight.Text = active and "STOP\nRIGHT" or "AUTO\nRIGHT"
-			setFloatingActive(floatingButtons.AutoRight, active)
+			floatingButtons.AutoRight.Text = (autoMoving and currentAutoSide == "Right") and "STOP\nRIGHT" or "AUTO\nRIGHT"
+			floatingButtons.AutoRight.BackgroundColor3 = (autoMoving and currentAutoSide == "Right") and DIZZY_ACTIVE_BLUE or BUTTON_BLACK
 		end
 
 		if floatingButtons.Carry then
-			local active = speedMode == "Carry"
-			floatingButtons.Carry.Text = active and "CARRY\nSPEED\nON" or "CARRY\nSPEED\nOFF"
-			setFloatingActive(floatingButtons.Carry, active)
+			floatingButtons.Carry.Text = speedMode == "Carry" and "CARRY\nSPEED\nON" or "CARRY\nSPEED\nOFF"
+			floatingButtons.Carry.BackgroundColor3 = speedMode == "Carry" and DIZZY_ACTIVE_BLUE or BUTTON_BLACK
 		end
 
 		if floatingButtons.Bat then
-			local active = batAimbotEnabled
-			floatingButtons.Bat.Text = active and "BAT\nAIM\nON" or "BAT\nAIM\nOFF"
-			setFloatingActive(floatingButtons.Bat, active)
+			floatingButtons.Bat.Text = batAimbotEnabled and "BAT\nAIM\nON" or "BAT\nAIM\nOFF"
+			floatingButtons.Bat.BackgroundColor3 = batAimbotEnabled and DIZZY_ACTIVE_BLUE or BUTTON_BLACK
 		end
 
 		if floatingButtons.DropTools then
 			floatingButtons.DropTools.Text = "DROP"
-			setFloatingActive(floatingButtons.DropTools, false)
+			floatingButtons.DropTools.BackgroundColor3 = BUTTON_BLACK
 		end
 
 		if floatingButtons.LaggerCarry then
-			local active = speedMode == "Lagger Carry"
-			floatingButtons.LaggerCarry.Text = active and "LAGGER\nCARRY\nON" or "LAGGER\nCARRY\nOFF"
-			setFloatingActive(floatingButtons.LaggerCarry, active)
+			floatingButtons.LaggerCarry.Text = speedMode == "Lagger Carry" and "LAGGER\nCARRY\nON" or "LAGGER\nCARRY\nOFF"
+			floatingButtons.LaggerCarry.BackgroundColor3 = speedMode == "Lagger Carry" and DIZZY_ACTIVE_BLUE or BUTTON_BLACK
 		end
 
 		if floatingButtons.TPDown then
 			floatingButtons.TPDown.Text = "TP\nDOWN"
-			setFloatingActive(floatingButtons.TPDown, false)
+			floatingButtons.TPDown.BackgroundColor3 = BUTTON_BLACK
 		end
 
 		if floatingButtons.Lagger then
-			local active = speedMode == "Lagger"
-			floatingButtons.Lagger.Text = active and "LAGGER\nMODE\nON" or "LAGGER\nMODE\nOFF"
-			setFloatingActive(floatingButtons.Lagger, active)
+			floatingButtons.Lagger.Text = speedMode == "Lagger" and "LAGGER\nMODE\nON" or "LAGGER\nMODE\nOFF"
+			floatingButtons.Lagger.BackgroundColor3 = speedMode == "Lagger" and DIZZY_ACTIVE_BLUE or BUTTON_BLACK
 		end
 	end
 
@@ -4650,6 +4662,29 @@ RunService.RenderStepped:Connect(function()
 				or currentState == Enum.HumanoidStateType.PlatformStanding
 				or currentState == Enum.HumanoidStateType.Physics
 
+			local medusaEffectFound = false
+
+			if character then
+				for _, object in ipairs(character:GetDescendants()) do
+					local lowerName = string.lower(object.Name or "")
+
+					if string.find(lowerName, "medusa", 1, true)
+						or string.find(lowerName, "stone", 1, true)
+						or string.find(lowerName, "petrify", 1, true)
+						or string.find(lowerName, "petrified", 1, true)
+						or string.find(lowerName, "freeze", 1, true)
+						or string.find(lowerName, "frozen", 1, true) then
+						medusaEffectFound = true
+						break
+					end
+				end
+			end
+
+			if medusaEffectFound then
+				screenGui:SetAttribute("BatCounterLastVelocity", velocity.Magnitude)
+				return
+			end
+
 			local looksLikeBatHit =
 				strongRagdollState
 				or flatSpeed > 42
@@ -4709,7 +4744,10 @@ RunService.RenderStepped:Connect(function()
 				end)
 			end
 
-			screenGui:SetAttribute("BatCounterBusyUntil", now + 0.55)
+			screenGui:SetAttribute("BatCounterBusyUntil", now + 0.65)
+			screenGui:SetAttribute("CounterLockUntil", now + 0.85)
+			screenGui:SetAttribute("CounterLockTool", "Bat")
+			screenGui:SetAttribute("MedusaCounterLastTime", now)
 
 			task.spawn(function()
 				task.wait(0.01)
@@ -4735,6 +4773,12 @@ RunService.RenderStepped:Connect(function()
 			end
 
 			local now = os.clock()
+			local counterLockUntil = screenGui:GetAttribute("CounterLockUntil")
+
+			if typeof(counterLockUntil) == "number" and now < counterLockUntil then
+				return
+			end
+
 			local lastCounterTime = screenGui:GetAttribute("MedusaCounterLastTime")
 
 			if typeof(lastCounterTime) ~= "number" then
