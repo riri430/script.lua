@@ -1,4 +1,4 @@
-__DIZZY_UPLOAD_VERSION = "CARRY62_DROP_INSTANT"
+__DIZZY_UPLOAD_VERSION = "CARRY62_DROP_ULTRALITE_LAGFIX"
 __DIZZY_JUMP_CACHE = __DIZZY_JUMP_CACHE or {UntilTime = 0, Result = false, LastStatusTime = 0, LastDeepScanTime = 0}
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -2464,7 +2464,12 @@ local function safeAvatarPopForDropV67()
 end
 
 local function safeLocalDropHeld()
-	setStatus("DROP INSTANT: triggered.")
+	local now = os.clock()
+
+	if not __DIZZY_DROP_STATUS_TIME or now - __DIZZY_DROP_STATUS_TIME > 1.25 then
+		__DIZZY_DROP_STATUS_TIME = now
+		setStatus("DROP FAST: triggered.")
+	end
 
 	task.spawn(function()
 		pcall(function()
@@ -2473,86 +2478,65 @@ local function safeLocalDropHeld()
 	end)
 
 	local cachedDropRemotes = __DIZZY_DROP_REMOTE_CACHE
+
 	if cachedDropRemotes then
-		for _, remote in ipairs(cachedDropRemotes) do
-			if remote and remote.Parent then
-				pcall(function()
-					remote:FireServer()
-				end)
-				pcall(function()
-					remote:FireServer("Drop")
-				end)
-				pcall(function()
-					remote:FireServer("Release")
-				end)
-				pcall(function()
-					remote:FireServer("CancelCarry")
-				end)
+		task.defer(function()
+			local fired = 0
+
+			for _, remote in ipairs(cachedDropRemotes) do
+				if fired >= 4 then
+					break
+				end
+
+				if remote and remote.Parent then
+					fired += 1
+
+					pcall(function()
+						remote:FireServer()
+					end)
+
+					pcall(function()
+						remote:FireServer("Drop")
+					end)
+
+					if fired % 2 == 0 then
+						RunService.Heartbeat:Wait()
+					end
+				end
 			end
-		end
+		end)
 	end
 
-	local now = os.clock()
-	if __DIZZY_DROP_HELPER_LOCK_UNTIL and now < __DIZZY_DROP_HELPER_LOCK_UNTIL then
+	if __DIZZY_DROP_LIGHT_HELPER_LOCK_UNTIL and now < __DIZZY_DROP_LIGHT_HELPER_LOCK_UNTIL then
 		return
 	end
 
-	__DIZZY_DROP_HELPER_LOCK_UNTIL = now + 0.65
+	__DIZZY_DROP_LIGHT_HELPER_LOCK_UNTIL = now + 1.4
 
-	task.delay(0.12, function()
-		local heldObjects = {}
-
-		pcall(function()
-			if findLocalHeldObjectsForDrop then
-				heldObjects = findLocalHeldObjectsForDrop() or {}
-			end
-		end)
-
-		RunService.Heartbeat:Wait()
-
-		pcall(function()
-			fireSafeDropRemotes(heldObjects)
-		end)
-
-		RunService.Heartbeat:Wait()
-
-		pcall(function()
-			callDropRemoteFunctions(heldObjects)
-		end)
-
-		RunService.Heartbeat:Wait()
-
-		pcall(function()
-			fireLocalDropBindables(heldObjects)
-		end)
-
-		RunService.Heartbeat:Wait()
-
-		pcall(function()
-			activateNearbyDropPrompts()
-		end)
-
-		RunService.Heartbeat:Wait()
-
+	task.delay(0.22, function()
 		pcall(function()
 			tryBackpackDropToolOnly()
 		end)
 
-		for _, heldObject in ipairs(heldObjects) do
-			pcall(function()
-				detachOneLocalDropObject(heldObject)
-			end)
+		RunService.Heartbeat:Wait()
 
-			pcall(function()
-				flingOneHeldObjectUp(heldObject)
-			end)
+		if character then
+			for _, child in ipairs(character:GetChildren()) do
+				if child and child.Parent and not isProtectedHeldName(child.Name) and looksLikeDroppableHeldObject(child) then
+					pcall(function()
+						detachOneLocalDropObject(child)
+					end)
 
-			pcall(function()
-				scheduleFastSnapDown(heldObject)
-			end)
+					pcall(function()
+						flingOneHeldObjectUp(child)
+					end)
+
+					pcall(function()
+						scheduleFastSnapDown(child)
+					end)
+				end
+			end
 		end
-
-		setStatus("DROP INSTANT: helpers finished.")
 	end)
 end
 
@@ -2698,7 +2682,7 @@ local function performAirJump()
 			end
 		end
 
-		if not holdingCarryObject and jumpCache and findLocalHeldObjectsForDrop and now - (jumpCache.LastDeepScanTime or 0) > 2.25 then
+		if not holdingCarryObject and jumpCache and findLocalHeldObjectsForDrop and now - (jumpCache.LastDeepScanTime or 0) > 4.5 then
 			jumpCache.LastDeepScanTime = now
 
 			local heldObjects = nil
@@ -2720,7 +2704,7 @@ local function performAirJump()
 
 		if jumpCache then
 			jumpCache.Result = holdingCarryObject
-			jumpCache.UntilTime = now + (holdingCarryObject and 2.35 or 0.5)
+			jumpCache.UntilTime = now + (holdingCarryObject and 3.5 or 0.45)
 		end
 	end
 
