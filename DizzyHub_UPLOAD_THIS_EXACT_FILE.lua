@@ -1,10 +1,10 @@
-__DIZZY_UPLOAD_VERSION = "CARRY62_AUTOTP_BLUE_DROPPAUSE_LOADFIX3"
+__DIZZY_UPLOAD_VERSION = "CARRY62_RANDOM_RESPAWN_GUARD"
 __DIZZY_JUMP_CACHE = __DIZZY_JUMP_CACHE or {UntilTime = 0, Result = false, LastStatusTime = 0, LastDeepScanTime = 0}
 __DIZZY_DROP_SUPPRESS_TOOL_UNTIL = __DIZZY_DROP_SUPPRESS_TOOL_UNTIL or 0
-__DIZZY_ACTIVE_BUTTON_BLUE = __DIZZY_ACTIVE_BUTTON_BLUE or Color3.fromRGB(18, 48, 105)
-__DIZZY_AUTOTP_IGNORE_UNTIL = __DIZZY_AUTOTP_IGNORE_UNTIL or 0
-__DIZZY_AUTOTP_PAUSED_FOR_DROP = __DIZZY_AUTOTP_PAUSED_FOR_DROP or false
-__DIZZY_AUTOTP_RESTORE_RUNNING = __DIZZY_AUTOTP_RESTORE_RUNNING or false
+__DIZZY_LAST_SAFE_GROUND_CFRAME = __DIZZY_LAST_SAFE_GROUND_CFRAME or nil
+__DIZZY_LAST_SAFE_GROUND_TIME = __DIZZY_LAST_SAFE_GROUND_TIME or 0
+__DIZZY_RESPAWN_GUARD_COOLDOWN_UNTIL = __DIZZY_RESPAWN_GUARD_COOLDOWN_UNTIL or 0
+__DIZZY_DROP_SAFE_UNTIL = __DIZZY_DROP_SAFE_UNTIL or 0
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -486,17 +486,13 @@ local function getHeightAboveGround()
 		return nil
 	end
 
-	local rootHalfHeight = humanoidRootPart.Size.Y / 2
-	local standingOffset = math.max((humanoid.HipHeight or 2) + rootHalfHeight - 0.35, 2.35)
-
-	return math.max(0, (origin.Y - result.Position.Y) - standingOffset)
+	return math.max(0, origin.Y - result.Position.Y)
 end
 
 local function setAutoTpDownHeight(value)
 	value = tonumber(value) or autoTpDownHeight
 	autoTpDownHeight = math.clamp(math.floor(value + 0.5), MIN_AUTO_TP_DOWN_HEIGHT, MAX_AUTO_TP_DOWN_HEIGHT)
-	lastAutoTpDownHeight = getHeightAboveGround() or 0
-	__DIZZY_AUTOTP_IGNORE_UNTIL = os.clock() + 0.15
+	lastAutoTpDownHeight = 0
 
 	if autoTpDownHeightLabel and autoTpDownHeightLabel.Parent then
 		autoTpDownHeightLabel.Text = tostring(autoTpDownHeight)
@@ -506,27 +502,16 @@ local function setAutoTpDownHeight(value)
 end
 
 local function updateAutoTpDown()
-	local now = os.clock()
-
 	if not autoTpDownEnabled then
 		lastAutoTpDownHeight = 0
 		return
 	end
 
-	if now < (__DIZZY_AUTOTP_IGNORE_UNTIL or 0) then
-		lastAutoTpDownHeight = getHeightAboveGround() or lastAutoTpDownHeight or 0
+	if os.clock() - lastAutoTpDownTime < AUTO_TP_DOWN_COOLDOWN then
 		return
 	end
 
-	if now - lastAutoTpDownTime < AUTO_TP_DOWN_COOLDOWN then
-		return
-	end
-
-	if now < tpDownLockUntil then
-		return
-	end
-
-	if not humanoid or not humanoidRootPart or humanoid.Health <= 0 then
+	if os.clock() < tpDownLockUntil then
 		return
 	end
 
@@ -536,20 +521,14 @@ local function updateAutoTpDown()
 		return
 	end
 
-	if humanoid.FloorMaterial ~= Enum.Material.Air then
-		lastAutoTpDownHeight = 0
-		return
-	end
-
 	local selectedHeight = math.clamp(autoTpDownHeight, MIN_AUTO_TP_DOWN_HEIGHT, MAX_AUTO_TP_DOWN_HEIGHT)
-	local crossedSelectedHeight = (lastAutoTpDownHeight or 0) < selectedHeight and height >= selectedHeight
-	local yVelocity = humanoidRootPart.AssemblyLinearVelocity.Y
+	local crossedSelectedHeight = lastAutoTpDownHeight < selectedHeight and height >= selectedHeight
 
 	lastAutoTpDownHeight = height
 
-	if crossedSelectedHeight and yVelocity > 2 then
-		lastAutoTpDownTime = now
-		setStatus("Auto TP Down triggered at height " .. tostring(selectedHeight) .. ".")
+	if crossedSelectedHeight then
+		lastAutoTpDownTime = os.clock()
+		setStatus("Auto TP Down triggered at adjusted height " .. tostring(selectedHeight) .. ".")
 		tpDownToGround()
 	end
 end
@@ -2345,10 +2324,6 @@ local function enableLocalRespawnSoftener()
 	end)
 
 	pcall(function()
-		humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
-	end)
-
-	pcall(function()
 		humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
 	end)
 
@@ -2356,6 +2331,7 @@ local function enableLocalRespawnSoftener()
 		humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
 	end)
 end
+
 
 local function lateDropRecovery()
 	if not humanoidRootPart or not humanoid or humanoid.Health <= 0 then
@@ -2519,43 +2495,7 @@ end
 local function safeLocalDropHeld()
 	local now = os.clock()
 
-	__DIZZY_AUTOTP_IGNORE_UNTIL = now + 1.25
-
-	if autoTpDownEnabled then
-		autoTpDownEnabled = false
-		__DIZZY_AUTOTP_PAUSED_FOR_DROP = true
-		lastAutoTpDownHeight = 0
-		updateFloatingButtons()
-
-		if not __DIZZY_AUTOTP_RESTORE_RUNNING then
-			__DIZZY_AUTOTP_RESTORE_RUNNING = true
-
-			task.spawn(function()
-				local started = os.clock()
-
-				while os.clock() - started < 3 do
-					if humanoid and humanoidRootPart and humanoid.Health > 0 and humanoid.FloorMaterial ~= Enum.Material.Air then
-						break
-					end
-
-					task.wait(0.05)
-				end
-
-				__DIZZY_AUTOTP_RESTORE_RUNNING = false
-
-				if __DIZZY_AUTOTP_PAUSED_FOR_DROP then
-					__DIZZY_AUTOTP_PAUSED_FOR_DROP = false
-					autoTpDownEnabled = true
-					lastAutoTpDownTime = os.clock()
-					lastAutoTpDownHeight = getHeightAboveGround() or 0
-					__DIZZY_AUTOTP_IGNORE_UNTIL = os.clock() + 0.45
-					setStatus("Auto TP Down restored after DROP.")
-					updateFloatingButtons()
-				end
-			end)
-		end
-	end
-
+	__DIZZY_DROP_SAFE_UNTIL = now + 2.4
 	__DIZZY_DROP_SUPPRESS_TOOL_UNTIL = now + 1.5
 	toolGuardUntil = 0
 	lastHeldTool = nil
@@ -3397,17 +3337,22 @@ local function repairCharacterJointsLight()
 	for _, object in ipairs(character:GetDescendants()) do
 		if object:IsA("Motor6D") then
 			object.Enabled = true
-		elseif isRagdollObject(object) then
-			if object:IsA("Constraint") then
-				pcall(function()
-					object:Destroy()
-				end)
-			end
 		elseif object:IsA("BasePart") then
 			object.Anchored = false
+		elseif object:IsA("Constraint") then
+			local lowerName = string.lower(object.Name or "")
+
+			if string.find(lowerName, "ragdoll", 1, true)
+				or string.find(lowerName, "stun", 1, true)
+				or string.find(lowerName, "knock", 1, true) then
+				pcall(function()
+					object.Enabled = false
+				end)
+			end
 		end
 	end
 end
+
 
 local function forceFastGetUp()
 	if not humanoid or humanoid.Health <= 0 then
@@ -3586,12 +3531,16 @@ local function startAntiRagdollWatcher()
 		task.defer(function()
 			if object:IsA("Motor6D") then
 				object.Enabled = true
-			elseif isRagdollObject(object) then
-				startAntiKnockbackWindow()
+			elseif object:IsA("Constraint") then
+				local lowerName = string.lower(object.Name or "")
 
-				if object:IsA("Constraint") then
+				if string.find(lowerName, "ragdoll", 1, true)
+					or string.find(lowerName, "stun", 1, true)
+					or string.find(lowerName, "knock", 1, true) then
+					startAntiKnockbackWindow()
+
 					pcall(function()
-						object:Destroy()
+						object.Enabled = false
 					end)
 				end
 			elseif object:IsA("BasePart") then
@@ -3617,6 +3566,60 @@ local function updateAntiRagdoll()
 	end
 
 	applyAntiRagdollState()
+end
+
+local function updateRespawnGuard()
+	if not humanoid or not humanoidRootPart or humanoid.Health <= 0 then
+		return
+	end
+
+	local now = os.clock()
+	local state = humanoid:GetState()
+	local rootCFrame = humanoidRootPart.CFrame
+	local rootPosition = rootCFrame.Position
+	local velocity = humanoidRootPart.AssemblyLinearVelocity
+
+	if humanoid.FloorMaterial ~= Enum.Material.Air
+		and state ~= Enum.HumanoidStateType.Dead
+		and not humanoidRootPart.Anchored then
+		__DIZZY_LAST_SAFE_GROUND_CFRAME = rootCFrame
+		__DIZZY_LAST_SAFE_GROUND_TIME = now
+	end
+
+	if not __DIZZY_LAST_SAFE_GROUND_CFRAME then
+		return
+	end
+
+	if now < (__DIZZY_RESPAWN_GUARD_COOLDOWN_UNTIL or 0) then
+		return
+	end
+
+	local fallenHeight = workspace.FallenPartsDestroyHeight or -500
+	local tooLow = rootPosition.Y <= fallenHeight + 55
+	local safeY = __DIZZY_LAST_SAFE_GROUND_CFRAME.Position.Y
+	local tooFarBelowSafe = rootPosition.Y < safeY - 130 and velocity.Y < -95
+	local inDropWindow = now < (__DIZZY_DROP_SAFE_UNTIL or 0)
+	local extremeDownVelocity = (not inDropWindow) and velocity.Y < -260 and now - (__DIZZY_LAST_SAFE_GROUND_TIME or 0) < 6
+
+	if not tooLow and not tooFarBelowSafe and not extremeDownVelocity then
+		return
+	end
+
+	__DIZZY_RESPAWN_GUARD_COOLDOWN_UNTIL = now + 0.45
+
+	local safeCFrame = __DIZZY_LAST_SAFE_GROUND_CFRAME
+	local safePosition = safeCFrame.Position + Vector3.new(0, 3, 0)
+	local safeLook = safeCFrame.LookVector
+
+	pcall(function()
+		humanoid.PlatformStand = false
+		humanoid.Sit = false
+		humanoid.AutoRotate = true
+		humanoidRootPart.CFrame = CFrame.new(safePosition, safePosition + safeLook)
+		humanoidRootPart.AssemblyLinearVelocity = Vector3.zero
+		humanoidRootPart.AssemblyAngularVelocity = Vector3.zero
+		humanoid:ChangeState(Enum.HumanoidStateType.Running)
+	end)
 end
 
 local function makePanelDraggable(handle, frame)
@@ -3745,7 +3748,7 @@ local function makeToggle(parent, text, getState, callback)
 	local function refresh()
 		local enabled = getState()
 		button.Text = text .. ": " .. (enabled and "ON" or "OFF")
-		button.BackgroundColor3 = enabled and __DIZZY_ACTIVE_BUTTON_BLUE or BUTTON_BLACK
+		button.BackgroundColor3 = enabled and SELECTED_COLOR or BUTTON_BLACK
 	end
 
 	button = makeButton(parent, "", 32, function()
@@ -4128,13 +4131,10 @@ elseif sectionName == "Movement" then
 				autoTpDownEnabled = not autoTpDownEnabled
 
 				if autoTpDownEnabled then
-					__DIZZY_AUTOTP_PAUSED_FOR_DROP = false
-					lastAutoTpDownTime = os.clock()
-					lastAutoTpDownHeight = getHeightAboveGround() or 0
-					__DIZZY_AUTOTP_IGNORE_UNTIL = os.clock() + 0.2
-					setStatus("Auto TP Down enabled at height " .. tostring(autoTpDownHeight) .. ".")
+					lastAutoTpDownTime = 0
+					lastAutoTpDownHeight = 0
+					setStatus("Auto TP Down enabled at adjusted height " .. tostring(autoTpDownHeight) .. ".")
 				else
-					__DIZZY_AUTOTP_PAUSED_FOR_DROP = false
 					setStatus("Auto TP Down disabled.")
 				end
 
@@ -4440,56 +4440,36 @@ end)
 	end
 
 	updateFloatingButtons = function()
-		local function setButtonActive(button, active)
-			if button and button.Parent then
-				button.BackgroundColor3 = active and __DIZZY_ACTIVE_BUTTON_BLUE or BUTTON_BLACK
-			end
-		end
-
 		if floatingButtons.AutoLeft then
-			local isActive = autoMoving and currentAutoSide == "Left"
-			floatingButtons.AutoLeft.Text = isActive and "STOP\nLEFT" or "AUTO\nLEFT"
-			setButtonActive(floatingButtons.AutoLeft, isActive)
+			floatingButtons.AutoLeft.Text = autoMoving and currentAutoSide == "Left" and "STOP\nLEFT" or "AUTO\nLEFT"
 		end
 
 		if floatingButtons.AutoRight then
-			local isActive = autoMoving and currentAutoSide == "Right"
-			floatingButtons.AutoRight.Text = isActive and "STOP\nRIGHT" or "AUTO\nRIGHT"
-			setButtonActive(floatingButtons.AutoRight, isActive)
+			floatingButtons.AutoRight.Text = autoMoving and currentAutoSide == "Right" and "STOP\nRIGHT" or "AUTO\nRIGHT"
 		end
 
 		if floatingButtons.Carry then
-			local isActive = speedMode == "Carry"
-			floatingButtons.Carry.Text = isActive and "CARRY\nSPEED\nON" or "CARRY\nSPEED\nOFF"
-			setButtonActive(floatingButtons.Carry, isActive)
+			floatingButtons.Carry.Text = speedMode == "Carry" and "CARRY\nSPEED\nON" or "CARRY\nSPEED\nOFF"
 		end
 
 		if floatingButtons.Bat then
-			local isActive = batAimbotEnabled
-			floatingButtons.Bat.Text = isActive and "BAT\nAIM\nON" or "BAT\nAIM\nOFF"
-			setButtonActive(floatingButtons.Bat, isActive)
+			floatingButtons.Bat.Text = batAimbotEnabled and "BAT\nAIM\nON" or "BAT\nAIM\nOFF"
 		end
 
 		if floatingButtons.DropTools then
 			floatingButtons.DropTools.Text = "DROP"
-			setButtonActive(floatingButtons.DropTools, false)
 		end
 
 		if floatingButtons.LaggerCarry then
-			local isActive = speedMode == "Lagger Carry"
-			floatingButtons.LaggerCarry.Text = isActive and "LAGGER\nCARRY\nON" or "LAGGER\nCARRY\nOFF"
-			setButtonActive(floatingButtons.LaggerCarry, isActive)
+			floatingButtons.LaggerCarry.Text = speedMode == "Lagger Carry" and "LAGGER\nCARRY\nON" or "LAGGER\nCARRY\nOFF"
 		end
 
 		if floatingButtons.TPDown then
 			floatingButtons.TPDown.Text = "TP\nDOWN"
-			setButtonActive(floatingButtons.TPDown, false)
 		end
 
 		if floatingButtons.Lagger then
-			local isActive = speedMode == "Lagger"
-			floatingButtons.Lagger.Text = isActive and "LAGGER\nMODE\nON" or "LAGGER\nMODE\nOFF"
-			setButtonActive(floatingButtons.Lagger, isActive)
+			floatingButtons.Lagger.Text = speedMode == "Lagger" and "LAGGER\nMODE\nON" or "LAGGER\nMODE\nOFF"
 		end
 	end
 
@@ -4662,6 +4642,7 @@ RunService.RenderStepped:Connect(function()
 	if humanoid and humanoid.Health > 0 then
 		rememberMoveDirection()
 		keepGuiButtonsAlive()
+		updateRespawnGuard()
 
 		if not isAirborne() then
 			resetJumpSequence()
