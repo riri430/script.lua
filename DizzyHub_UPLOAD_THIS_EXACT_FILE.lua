@@ -1,5 +1,6 @@
-__DIZZY_UPLOAD_VERSION = "CARRY62_DROP_MEDIUM_POWER_LAGFIX"
+__DIZZY_UPLOAD_VERSION = "CARRY62_DROP_MORE_POWER_NO_BAT_PULL"
 __DIZZY_JUMP_CACHE = __DIZZY_JUMP_CACHE or {UntilTime = 0, Result = false, LastStatusTime = 0, LastDeepScanTime = 0}
+__DIZZY_DROP_SUPPRESS_TOOL_UNTIL = __DIZZY_DROP_SUPPRESS_TOOL_UNTIL or 0
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -131,11 +132,11 @@ local AIR_JUMP_POWER = 72
 local DOWNWARD_FORCE = -85
 local SOFT_DOWNWARD_FORCE_WHILE_HOLDING = -62
 local CARRY_JUMP_DOWN_FORCE_V49 = -55
-local DROP_POP_UP_FORCE_V67 = 220
-local DROP_POP_DOWN_FORCE_V67 = -320
+local DROP_POP_UP_FORCE_V67 = 235
+local DROP_POP_DOWN_FORCE_V67 = -355
 local DROP_POP_UP_TIME_V67 = 0.095
 local DROP_POP_RECOVER_TIME_V67 = 0.16
-local DROP_POP_SNAP_UP_STUDS_V67 = 26
+local DROP_POP_SNAP_UP_STUDS_V67 = 30
 local CARRY_SAFE_DOWNWARD_FORCE = -30
 local CARRY_SAFE_DOWNWARD_TIME = 0.34
 local MIN_AIR_JUMP_INTERVAL = 0.2
@@ -192,10 +193,10 @@ local DROP_PROMPT_KEYWORDS = {
 
 local DROP_PROMPT_RADIUS = 18
 
-local FLING_DROP_UP_POWER = 640
-local FLING_DROP_FORWARD_POWER = 105
+local FLING_DROP_UP_POWER = 700
+local FLING_DROP_FORWARD_POWER = 125
 local FLING_DROP_AVATAR_UP_POWER = 170
-local FLING_DROP_OBJECT_HEIGHT = 105
+local FLING_DROP_OBJECT_HEIGHT = 115
 
 local FLING_DROP_DOWN_DELAY = 0.055
 local FLING_DROP_DOWN_DELAY_2 = 0.14
@@ -1235,6 +1236,10 @@ local function rememberHeldTool()
 end
 
 local function reEquipLastHeldTool()
+	if __DIZZY_DROP_SUPPRESS_TOOL_UNTIL and os.clock() < __DIZZY_DROP_SUPPRESS_TOOL_UNTIL then
+		return
+	end
+
 	if not lastHeldTool then
 		return
 	end
@@ -2466,6 +2471,16 @@ end
 local function safeLocalDropHeld()
 	local now = os.clock()
 
+	__DIZZY_DROP_SUPPRESS_TOOL_UNTIL = now + 1.5
+	toolGuardUntil = 0
+	lastHeldTool = nil
+
+	pcall(function()
+		if humanoid then
+			humanoid:UnequipTools()
+		end
+	end)
+
 	if not __DIZZY_DROP_STATUS_TIME or now - __DIZZY_DROP_STATUS_TIME > 1.25 then
 		__DIZZY_DROP_STATUS_TIME = now
 		setStatus("DROP FAST: triggered.")
@@ -2513,7 +2528,7 @@ local function safeLocalDropHeld()
 
 	__DIZZY_DROP_LIGHT_HELPER_LOCK_UNTIL = now + 1.4
 
-	task.delay(0.22, function()
+	task.delay(0.08, function()
 		pcall(function()
 			tryBackpackDropToolOnly()
 		end)
@@ -2541,6 +2556,11 @@ local function safeLocalDropHeld()
 end
 
 local function startToolGuard()
+	if __DIZZY_DROP_SUPPRESS_TOOL_UNTIL and os.clock() < __DIZZY_DROP_SUPPRESS_TOOL_UNTIL then
+		toolGuardUntil = 0
+		return
+	end
+
 	local tool = rememberHeldTool()
 
 	if not tool then
