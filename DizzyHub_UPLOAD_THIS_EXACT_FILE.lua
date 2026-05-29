@@ -1,4 +1,4 @@
-__DIZZY_UPLOAD_VERSION = "AR_BLUE_SAFE_NORESPAWN_FIX"
+__DIZZY_UPLOAD_VERSION = "AR_BLUE_SAFE_NORESPAWN_FIX_LOADFIX_LOCAL_LIMIT"
 __DIZZY_JUMP_CACHE = __DIZZY_JUMP_CACHE or {UntilTime = 0, Result = false, LastStatusTime = 0, LastDeepScanTime = 0}
 __DIZZY_DROP_SUPPRESS_TOOL_UNTIL = __DIZZY_DROP_SUPPRESS_TOOL_UNTIL or 0
 local Players = game:GetService("Players")
@@ -15,7 +15,7 @@ local screenGui
 local mainFrame
 local statusLabel
 local BUTTON_BLACK = Color3.fromRGB(0, 0, 0)
-local ACTIVE_BUTTON_BLUE = Color3.fromRGB(18, 42, 95)
+ACTIVE_BUTTON_BLUE = Color3.fromRGB(18, 42, 95)
 local PANEL_COLOR = Color3.fromRGB(25, 25, 30)
 local LEFT_COLOR = Color3.fromRGB(32, 32, 40)
 local RIGHT_COLOR = Color3.fromRGB(36, 36, 44)
