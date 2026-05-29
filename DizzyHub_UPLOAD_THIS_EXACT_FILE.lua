@@ -1,5 +1,5 @@
-__DIZZY_UPLOAD_VERSION = "PAST_INFINITE_JUMP_POWER_LAGFIX"
-__DIZZY_JUMP_CACHE = __DIZZY_JUMP_CACHE or {UntilTime = 0, Result = false, LastStatusTime = 0}
+__DIZZY_UPLOAD_VERSION = "CARRY_JUMP_HIGHER_LAGFIX_V2"
+__DIZZY_JUMP_CACHE = __DIZZY_JUMP_CACHE or {UntilTime = 0, Result = false, LastStatusTime = 0, LastDeepScanTime = 0}
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -2643,28 +2643,33 @@ local function performAirJump()
 		return
 	end
 
-	local holdingCarryObject = false
 	local now = os.clock()
 	local jumpCache = __DIZZY_JUMP_CACHE
+	local holdingCarryObject = false
 
 	if jumpCache and now < (jumpCache.UntilTime or 0) then
 		holdingCarryObject = jumpCache.Result == true
 	else
-		pcall(function()
-			if character then
-				for _, child in ipairs(character:GetChildren()) do
-					if child and child.Parent and not isProtectedHeldName(child.Name) then
-						if (child:IsA("Model") or child:IsA("BasePart") or child:IsA("Tool")) and looksLikeDroppableHeldObject(child) then
-							holdingCarryObject = true
-							return
-						end
+		if character then
+			for _, child in ipairs(character:GetChildren()) do
+				if child and child.Parent and not isProtectedHeldName(child.Name) then
+					if (child:IsA("Model") or child:IsA("BasePart") or child:IsA("Tool")) and looksLikeDroppableHeldObject(child) then
+						holdingCarryObject = true
+						break
 					end
 				end
 			end
+		end
 
-			if not holdingCarryObject and findLocalHeldObjectsForDrop then
-				local heldObjects = findLocalHeldObjectsForDrop()
+		if not holdingCarryObject and jumpCache and findLocalHeldObjectsForDrop and now - (jumpCache.LastDeepScanTime or 0) > 2.25 then
+			jumpCache.LastDeepScanTime = now
 
+			local heldObjects = nil
+			pcall(function()
+				heldObjects = findLocalHeldObjectsForDrop()
+			end)
+
+			if heldObjects then
 				for _, object in ipairs(heldObjects) do
 					if object and object.Parent and not isProtectedHeldName(object.Name) then
 						if object:IsA("Model") or object:IsA("BasePart") or object:IsA("Tool") then
@@ -2674,22 +2679,28 @@ local function performAirJump()
 					end
 				end
 			end
-		end)
+		end
 
 		if jumpCache then
 			jumpCache.Result = holdingCarryObject
-			jumpCache.UntilTime = now + (holdingCarryObject and 0.8 or 0.25)
+			jumpCache.UntilTime = now + (holdingCarryObject and 2.35 or 0.5)
 		end
 	end
 
 	if not holdingCarryObject then
 		startToolGuard()
 	else
-		pcall(function()
+		if humanoid.Sit then
 			humanoid.Sit = false
+		end
+
+		if humanoid.PlatformStand then
 			humanoid.PlatformStand = false
+		end
+
+		if humanoid.AutoRotate == false then
 			humanoid.AutoRotate = true
-		end)
+		end
 	end
 
 	local currentVelocity = humanoidRootPart.AssemblyLinearVelocity
@@ -2697,8 +2708,8 @@ local function performAirJump()
 	local horizontalMultiplier = 1
 
 	if holdingCarryObject then
-		jumpPower = 46
-		horizontalMultiplier = 0.93
+		jumpPower = 54
+		horizontalMultiplier = 0.96
 	end
 
 	humanoidRootPart.AssemblyLinearVelocity = Vector3.new(
@@ -2708,13 +2719,12 @@ local function performAirJump()
 	)
 
 	humanoidRootPart.AssemblyAngularVelocity = Vector3.zero
-	lastAirJumpTime = os.clock()
+	lastAirJumpTime = now
 
 	if not holdingCarryObject then
 		task.defer(reEquipLastHeldTool)
 	end
 end
-
 local function isHoldingCarryObjectForJumpDown()
 	if not character then
 		return false
@@ -2875,7 +2885,7 @@ local function handleJumpAbility()
 	performAirJump()
 
 	local jumpCache = __DIZZY_JUMP_CACHE
-	if not jumpCache or now - (jumpCache.LastStatusTime or 0) > 0.4 then
+	if not jumpCache or now - (jumpCache.LastStatusTime or 0) > 2.5 then
 		if jumpCache then
 			jumpCache.LastStatusTime = now
 		end
