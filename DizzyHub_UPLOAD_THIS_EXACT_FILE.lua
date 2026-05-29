@@ -1,4 +1,4 @@
-__DIZZY_UPLOAD_VERSION = "CARRY62_DROP_POWER_UP"
+__DIZZY_UPLOAD_VERSION = "CARRY62_DROP_INSTANT"
 __DIZZY_JUMP_CACHE = __DIZZY_JUMP_CACHE or {UntilTime = 0, Result = false, LastStatusTime = 0, LastDeepScanTime = 0}
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -1461,8 +1461,15 @@ local function findLocalDropRemotes()
 		end
 	end
 
+	__DIZZY_DROP_REMOTE_CACHE = remotes
 	return remotes
 end
+
+task.delay(0.8, function()
+	pcall(function()
+		__DIZZY_DROP_REMOTE_CACHE = findLocalDropRemotes()
+	end)
+end)
 
 local function getRootOutsideCharacter(part)
 	if not part or not character then
@@ -2457,68 +2464,96 @@ local function safeAvatarPopForDropV67()
 end
 
 local function safeLocalDropHeld()
-	local heldObjects = {}
+	setStatus("DROP INSTANT: triggered.")
 
-	pcall(function()
-		if findLocalHeldObjectsForDrop then
-			heldObjects = findLocalHeldObjectsForDrop() or {}
+	task.spawn(function()
+		pcall(function()
+			safeAvatarPopForDropV67()
+		end)
+	end)
+
+	local cachedDropRemotes = __DIZZY_DROP_REMOTE_CACHE
+	if cachedDropRemotes then
+		for _, remote in ipairs(cachedDropRemotes) do
+			if remote and remote.Parent then
+				pcall(function()
+					remote:FireServer()
+				end)
+				pcall(function()
+					remote:FireServer("Drop")
+				end)
+				pcall(function()
+					remote:FireServer("Release")
+				end)
+				pcall(function()
+					remote:FireServer("CancelCarry")
+				end)
+			end
 		end
-	end)
-
-	pcall(function()
-		fireSafeDropRemotes(heldObjects)
-	end)
-
-	pcall(function()
-		callDropRemoteFunctions(heldObjects)
-	end)
-
-	pcall(function()
-		fireLocalDropBindables(heldObjects)
-	end)
-
-	pcall(function()
-		activateNearbyDropPrompts()
-	end)
-
-	pcall(function()
-		tryBackpackDropToolOnly()
-	end)
-
-	for _, heldObject in ipairs(heldObjects) do
-		pcall(function()
-			detachOneLocalDropObject(heldObject)
-		end)
-
-		pcall(function()
-			flingOneHeldObjectUp(heldObject)
-		end)
-
-		pcall(function()
-			scheduleFastSnapDown(heldObject)
-		end)
 	end
 
-	local popped = safeAvatarPopForDropV67()
+	local now = os.clock()
+	if __DIZZY_DROP_HELPER_LOCK_UNTIL and now < __DIZZY_DROP_HELPER_LOCK_UNTIL then
+		return
+	end
 
-	if popped then
-		task.wait(0.045)
+	__DIZZY_DROP_HELPER_LOCK_UNTIL = now + 0.65
+
+	task.delay(0.12, function()
+		local heldObjects = {}
+
 		pcall(function()
-			local stillHeld = false
-
-			if isHoldingCarryObjectForJumpDown then
-				stillHeld = isHoldingCarryObjectForJumpDown()
-			end
-
-			if stillHeld then
-				safeAvatarPopForDropV67()
+			if findLocalHeldObjectsForDrop then
+				heldObjects = findLocalHeldObjectsForDrop() or {}
 			end
 		end)
 
-		setStatus("DROP POWER UP: stronger drop tried.")
-	else
-		setStatus("DROP POWER UP: triggers tried.")
-	end
+		RunService.Heartbeat:Wait()
+
+		pcall(function()
+			fireSafeDropRemotes(heldObjects)
+		end)
+
+		RunService.Heartbeat:Wait()
+
+		pcall(function()
+			callDropRemoteFunctions(heldObjects)
+		end)
+
+		RunService.Heartbeat:Wait()
+
+		pcall(function()
+			fireLocalDropBindables(heldObjects)
+		end)
+
+		RunService.Heartbeat:Wait()
+
+		pcall(function()
+			activateNearbyDropPrompts()
+		end)
+
+		RunService.Heartbeat:Wait()
+
+		pcall(function()
+			tryBackpackDropToolOnly()
+		end)
+
+		for _, heldObject in ipairs(heldObjects) do
+			pcall(function()
+				detachOneLocalDropObject(heldObject)
+			end)
+
+			pcall(function()
+				flingOneHeldObjectUp(heldObject)
+			end)
+
+			pcall(function()
+				scheduleFastSnapDown(heldObject)
+			end)
+		end
+
+		setStatus("DROP INSTANT: helpers finished.")
+	end)
 end
 
 local function startToolGuard()
