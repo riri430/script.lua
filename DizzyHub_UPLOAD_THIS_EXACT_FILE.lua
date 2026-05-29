@@ -1,4 +1,4 @@
-__DIZZY_UPLOAD_VERSION = "CARRY62_ANTIRAGDOLL_NORMAL_FALL"
+__DIZZY_UPLOAD_VERSION = "CARRY62_DROP_POWER_UP"
 __DIZZY_JUMP_CACHE = __DIZZY_JUMP_CACHE or {UntilTime = 0, Result = false, LastStatusTime = 0, LastDeepScanTime = 0}
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -131,11 +131,11 @@ local AIR_JUMP_POWER = 72
 local DOWNWARD_FORCE = -85
 local SOFT_DOWNWARD_FORCE_WHILE_HOLDING = -62
 local CARRY_JUMP_DOWN_FORCE_V49 = -55
-local DROP_POP_UP_FORCE_V67 = 190
-local DROP_POP_DOWN_FORCE_V67 = -260
-local DROP_POP_UP_TIME_V67 = 0.085
-local DROP_POP_RECOVER_TIME_V67 = 0.16
-local DROP_POP_SNAP_UP_STUDS_V67 = 22
+local DROP_POP_UP_FORCE_V67 = 245
+local DROP_POP_DOWN_FORCE_V67 = -380
+local DROP_POP_UP_TIME_V67 = 0.105
+local DROP_POP_RECOVER_TIME_V67 = 0.18
+local DROP_POP_SNAP_UP_STUDS_V67 = 32
 local CARRY_SAFE_DOWNWARD_FORCE = -30
 local CARRY_SAFE_DOWNWARD_TIME = 0.34
 local MIN_AIR_JUMP_INTERVAL = 0.2
@@ -192,14 +192,14 @@ local DROP_PROMPT_KEYWORDS = {
 
 local DROP_PROMPT_RADIUS = 18
 
-local FLING_DROP_UP_POWER = 520
-local FLING_DROP_FORWARD_POWER = 80
+local FLING_DROP_UP_POWER = 760
+local FLING_DROP_FORWARD_POWER = 150
 local FLING_DROP_AVATAR_UP_POWER = 170
-local FLING_DROP_OBJECT_HEIGHT = 90
+local FLING_DROP_OBJECT_HEIGHT = 125
 
-local FLING_DROP_DOWN_DELAY = 0.07
-local FLING_DROP_DOWN_DELAY_2 = 0.16
-local FLING_DROP_DOWN_DELAY_3 = 0.28
+local FLING_DROP_DOWN_DELAY = 0.055
+local FLING_DROP_DOWN_DELAY_2 = 0.14
+local FLING_DROP_DOWN_DELAY_3 = 0.24
 local FLING_DROP_DOWN_DISTANCE = 6
 local FLING_DROP_GROUND_RAY_HEIGHT = 90
 local FLING_DROP_GROUND_EXTRA_Y = 0.35
@@ -2457,51 +2457,52 @@ local function safeAvatarPopForDropV67()
 end
 
 local function safeLocalDropHeld()
-
 	local heldObjects = {}
 
 	pcall(function()
-		if dropV21FindHeldObjects then
-			heldObjects = dropV21FindHeldObjects()
-		elseif findLocalHeldObjectsForDrop then
-			heldObjects = findLocalHeldObjectsForDrop()
+		if findLocalHeldObjectsForDrop then
+			heldObjects = findLocalHeldObjectsForDrop() or {}
 		end
 	end)
 
 	pcall(function()
-		if dropV21TryRemoteEvents then
-			dropV21TryRemoteEvents(heldObjects)
-		end
+		fireSafeDropRemotes(heldObjects)
 	end)
 
 	pcall(function()
-		if dropV21TryRemoteFunctions then
-			dropV21TryRemoteFunctions(heldObjects)
-		end
+		callDropRemoteFunctions(heldObjects)
 	end)
 
 	pcall(function()
-		if dropV21TryPrompts then
-			dropV21TryPrompts()
-		end
+		fireLocalDropBindables(heldObjects)
 	end)
 
 	pcall(function()
-		if dropV21MakeGuiButtonsVisible then
-			dropV21MakeGuiButtonsVisible()
-		end
+		activateNearbyDropPrompts()
 	end)
 
 	pcall(function()
-		if dropV21LocalDetachOnly then
-			dropV21LocalDetachOnly(heldObjects)
-		end
+		tryBackpackDropToolOnly()
 	end)
+
+	for _, heldObject in ipairs(heldObjects) do
+		pcall(function()
+			detachOneLocalDropObject(heldObject)
+		end)
+
+		pcall(function()
+			flingOneHeldObjectUp(heldObject)
+		end)
+
+		pcall(function()
+			scheduleFastSnapDown(heldObject)
+		end)
+	end
 
 	local popped = safeAvatarPopForDropV67()
 
 	if popped then
-		task.wait(0.06)
+		task.wait(0.045)
 		pcall(function()
 			local stillHeld = false
 
@@ -2514,9 +2515,9 @@ local function safeLocalDropHeld()
 			end
 		end)
 
-		setStatus("DROP V67: stronger pop-down done.")
+		setStatus("DROP POWER UP: stronger drop tried.")
 	else
-		setStatus("DROP V67: triggers tried.")
+		setStatus("DROP POWER UP: triggers tried.")
 	end
 end
 
