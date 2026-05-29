@@ -1,4 +1,4 @@
-__DIZZY_UPLOAD_VERSION = "CARRY_JUMP_POWER_62_LAGFIX"
+__DIZZY_UPLOAD_VERSION = "CARRY62_ANTIRAGDOLL_NORMAL_FALL"
 __DIZZY_JUMP_CACHE = __DIZZY_JUMP_CACHE or {UntilTime = 0, Result = false, LastStatusTime = 0, LastDeepScanTime = 0}
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -70,14 +70,14 @@ local CHILLI_STYLE_ANTI_RAGDOLL = true
 local CHILLI_STATE_FIX_COOLDOWN = 0.045
 local CHILLI_VELOCITY_CLAMP = 38
 local CHILLI_UP_CLAMP = 55
-local CHILLI_DOWN_CLAMP = -45
+local CHILLI_DOWN_CLAMP = -95
 local CHILLI_MOVE_ASSIST_AFTER_HIT_TIME = 1.35
 local CHILLI_MOVE_ASSIST_MIN_SPEED = 5
 
 local antiKnockbackUntil = 0
 local ANTI_KNOCKBACK_RECOVERY_TIME = 0.55
 local ANTI_KNOCKBACK_EXTRA_SPEED = 8
-local ANTI_KNOCKBACK_MAX_FALL_SPEED = -5
+local ANTI_KNOCKBACK_MAX_FALL_SPEED = -95
 local ANTI_KNOCKBACK_MAX_UP_SPEED = 16
 
 local lastMoveDirection = Vector3.zero
@@ -2644,6 +2644,7 @@ local function performAirJump()
 	end
 
 	local now = os.clock()
+	antiRagdollJumpGraceUntil = math.max(antiRagdollJumpGraceUntil, now + 0.8)
 	local jumpCache = __DIZZY_JUMP_CACHE
 	local holdingCarryObject = false
 
@@ -3254,7 +3255,7 @@ local function shouldCancelKnockback()
 		return true
 	end
 
-	if velocity.Y < ANTI_KNOCKBACK_MAX_FALL_SPEED then
+	if velocity.Y < ANTI_KNOCKBACK_MAX_FALL_SPEED and isRealRagdollState() then
 		lastKnockbackDetectTime = now
 		startAntiKnockbackWindow()
 		return true
@@ -3378,10 +3379,11 @@ local function forceAntiRagdollMovementAssist()
 	end)
 
 	local velocity = humanoidRootPart.AssemblyLinearVelocity
-	local yVelocity = math.clamp(velocity.Y, CHILLI_DOWN_CLAMP, CHILLI_UP_CLAMP)
+	local normalAirFall = humanoid.FloorMaterial == Enum.Material.Air and not isRealRagdollState() and os.clock() > antiKnockbackUntil
+	local yVelocity = velocity.Y
 
-	if isAntiRagdollJumpGraceActive() or isJumpDownSequenceGraceActive() then
-		yVelocity = velocity.Y
+	if not normalAirFall and not isAntiRagdollJumpGraceActive() and not isJumpDownSequenceGraceActive() then
+		yVelocity = math.clamp(velocity.Y, CHILLI_DOWN_CLAMP, CHILLI_UP_CLAMP)
 	end
 
 	humanoidRootPart.AssemblyLinearVelocity = Vector3.new(
