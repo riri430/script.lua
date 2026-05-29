@@ -1,4 +1,5 @@
-__DIZZY_UPLOAD_VERSION = "PAST_INFINITE_JUMP_CARRY_SAFE"
+__DIZZY_UPLOAD_VERSION = "PAST_INFINITE_JUMP_POWER_LAGFIX"
+__DIZZY_JUMP_CACHE = __DIZZY_JUMP_CACHE or {UntilTime = 0, Result = false, LastStatusTime = 0}
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -126,7 +127,7 @@ local lastAutoTpDownTime = 0
 local AUTO_TP_DOWN_COOLDOWN = 0.22
 local lastAutoTpDownHeight = 0
 
-local AIR_JUMP_POWER = 68
+local AIR_JUMP_POWER = 72
 local DOWNWARD_FORCE = -85
 local SOFT_DOWNWARD_FORCE_WHILE_HOLDING = -62
 local CARRY_JUMP_DOWN_FORCE_V49 = -55
@@ -2643,32 +2644,43 @@ local function performAirJump()
 	end
 
 	local holdingCarryObject = false
+	local now = os.clock()
+	local jumpCache = __DIZZY_JUMP_CACHE
 
-	pcall(function()
-		if character then
-			for _, child in ipairs(character:GetChildren()) do
-				if child and child.Parent and not isProtectedHeldName(child.Name) then
-					if (child:IsA("Model") or child:IsA("BasePart") or child:IsA("Tool")) and looksLikeDroppableHeldObject(child) then
-						holdingCarryObject = true
-						return
+	if jumpCache and now < (jumpCache.UntilTime or 0) then
+		holdingCarryObject = jumpCache.Result == true
+	else
+		pcall(function()
+			if character then
+				for _, child in ipairs(character:GetChildren()) do
+					if child and child.Parent and not isProtectedHeldName(child.Name) then
+						if (child:IsA("Model") or child:IsA("BasePart") or child:IsA("Tool")) and looksLikeDroppableHeldObject(child) then
+							holdingCarryObject = true
+							return
+						end
 					end
 				end
 			end
-		end
 
-		if not holdingCarryObject and findLocalHeldObjectsForDrop then
-			local heldObjects = findLocalHeldObjectsForDrop()
+			if not holdingCarryObject and findLocalHeldObjectsForDrop then
+				local heldObjects = findLocalHeldObjectsForDrop()
 
-			for _, object in ipairs(heldObjects) do
-				if object and object.Parent and not isProtectedHeldName(object.Name) then
-					if object:IsA("Model") or object:IsA("BasePart") or object:IsA("Tool") then
-						holdingCarryObject = true
-						break
+				for _, object in ipairs(heldObjects) do
+					if object and object.Parent and not isProtectedHeldName(object.Name) then
+						if object:IsA("Model") or object:IsA("BasePart") or object:IsA("Tool") then
+							holdingCarryObject = true
+							break
+						end
 					end
 				end
 			end
+		end)
+
+		if jumpCache then
+			jumpCache.Result = holdingCarryObject
+			jumpCache.UntilTime = now + (holdingCarryObject and 0.8 or 0.25)
 		end
-	end)
+	end
 
 	if not holdingCarryObject then
 		startToolGuard()
@@ -2685,8 +2697,8 @@ local function performAirJump()
 	local horizontalMultiplier = 1
 
 	if holdingCarryObject then
-		jumpPower = 38
-		horizontalMultiplier = 0.88
+		jumpPower = 46
+		horizontalMultiplier = 0.93
 	end
 
 	humanoidRootPart.AssemblyLinearVelocity = Vector3.new(
@@ -2861,7 +2873,15 @@ local function handleJumpAbility()
 	end
 
 	performAirJump()
-	setStatus("V50 Jump " .. tostring(jumpDownPressCountV50) .. "/" .. tostring(targetJump) .. ".")
+
+	local jumpCache = __DIZZY_JUMP_CACHE
+	if not jumpCache or now - (jumpCache.LastStatusTime or 0) > 0.4 then
+		if jumpCache then
+			jumpCache.LastStatusTime = now
+		end
+
+		setStatus("V50 Jump " .. tostring(jumpDownPressCountV50) .. "/" .. tostring(targetJump) .. ".")
+	end
 end
 
 local function getCameraFlatDirections()
