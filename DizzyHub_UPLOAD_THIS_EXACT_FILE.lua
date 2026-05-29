@@ -1,4 +1,4 @@
-__DIZZY_UPLOAD_VERSION = "REPAIR_RESTORE_BATCOUNTER_DROP_NOAUTOPULL"
+__DIZZY_UPLOAD_VERSION = "SURGICAL_FIX_DROP_RESPAWN_BAT_SINGLE"
 __DIZZY_JUMP_CACHE = __DIZZY_JUMP_CACHE or {UntilTime = 0, Result = false, LastStatusTime = 0, LastDeepScanTime = 0}
 __DIZZY_DROP_SUPPRESS_TOOL_UNTIL = __DIZZY_DROP_SUPPRESS_TOOL_UNTIL or 0
 local Players = game:GetService("Players")
@@ -18,7 +18,7 @@ local BUTTON_BLACK = Color3.fromRGB(0, 0, 0)
 local PANEL_COLOR = Color3.fromRGB(25, 25, 30)
 local LEFT_COLOR = Color3.fromRGB(32, 32, 40)
 local RIGHT_COLOR = Color3.fromRGB(36, 36, 44)
-local SELECTED_COLOR = Color3.fromRGB(70, 70, 95)
+local SELECTED_COLOR = Color3.fromRGB(18, 54, 125)
 local BOX_COLOR = Color3.fromRGB(45, 45, 55)
 local SECTION_COLOR = Color3.fromRGB(50, 50, 62)
 
@@ -132,11 +132,11 @@ local AIR_JUMP_POWER = 72
 local DOWNWARD_FORCE = -85
 local SOFT_DOWNWARD_FORCE_WHILE_HOLDING = -62
 local CARRY_JUMP_DOWN_FORCE_V49 = -55
-local DROP_POP_UP_FORCE_V67 = 235
-local DROP_POP_DOWN_FORCE_V67 = -340
-local DROP_POP_UP_TIME_V67 = 0.065
-local DROP_POP_RECOVER_TIME_V67 = 0.095
-local DROP_POP_SNAP_UP_STUDS_V67 = 28
+local DROP_POP_UP_FORCE_V67 = 200
+local DROP_POP_DOWN_FORCE_V67 = -255
+local DROP_POP_UP_TIME_V67 = 0.045
+local DROP_POP_RECOVER_TIME_V67 = 0.07
+local DROP_POP_SNAP_UP_STUDS_V67 = 18
 local CARRY_SAFE_DOWNWARD_FORCE = -30
 local CARRY_SAFE_DOWNWARD_TIME = 0.34
 local MIN_AIR_JUMP_INTERVAL = 0.2
@@ -1377,7 +1377,6 @@ local function autoProtectImportantTools()
 		for _, object in ipairs(character:GetDescendants()) do
 			if object:IsA("Tool") and isProtectedToolName(object.Name) then
 				protectTool(object)
-				lastHeldTool = object
 			end
 		end
 	end
@@ -2319,9 +2318,6 @@ local function enableLocalRespawnSoftener()
 		humanoid.BreakJointsOnDeath = false
 	end)
 
-	pcall(function()
-		humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
-	end)
 
 	pcall(function()
 		humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
@@ -2494,7 +2490,7 @@ end
 local function safeLocalDropHeld()
 	local now = os.clock()
 
-	__DIZZY_DROP_SUPPRESS_TOOL_UNTIL = now + 1.5
+	__DIZZY_DROP_SUPPRESS_TOOL_UNTIL = now + 2.5
 	toolGuardUntil = 0
 	lastHeldTool = nil
 
@@ -2591,11 +2587,6 @@ local function startToolGuard()
 		return
 	end
 
-	if isProtectedToolName(tool.Name) then
-		toolGuardUntil = 0
-		return
-	end
-
 	toolGuardUntil = os.clock() + TOOL_GUARD_TIME
 
 	task.defer(reEquipLastHeldTool)
@@ -2607,11 +2598,6 @@ end
 
 local function updateToolGuard()
 	if os.clock() > toolGuardUntil then
-		return
-	end
-
-	if lastHeldTool and isProtectedToolName(lastHeldTool.Name) then
-		toolGuardUntil = 0
 		return
 	end
 
@@ -4261,7 +4247,7 @@ end)
 			makeInfo(contentArea, "Settings.")
 
 			makeButton(contentArea, "Reset Status Text", 42, function()
-				setStatus("Repair loaded: bat counter/drop restored, no auto bat pull.")
+				setStatus("V91 loaded: sections connected, title detached.")
 			end)
 
 			makeButton(contentArea, "Destroy GUI", 42, function()
@@ -4387,22 +4373,18 @@ end)
 	updateFloatingButtons = function()
 		if floatingButtons.AutoLeft then
 			floatingButtons.AutoLeft.Text = autoMoving and currentAutoSide == "Left" and "STOP\nLEFT" or "AUTO\nLEFT"
-			floatingButtons.AutoLeft.BackgroundColor3 = autoMoving and currentAutoSide == "Left" and SELECTED_COLOR or BUTTON_BLACK
 		end
 
 		if floatingButtons.AutoRight then
 			floatingButtons.AutoRight.Text = autoMoving and currentAutoSide == "Right" and "STOP\nRIGHT" or "AUTO\nRIGHT"
-			floatingButtons.AutoRight.BackgroundColor3 = autoMoving and currentAutoSide == "Right" and SELECTED_COLOR or BUTTON_BLACK
 		end
 
 		if floatingButtons.Carry then
 			floatingButtons.Carry.Text = speedMode == "Carry" and "CARRY\nSPEED\nON" or "CARRY\nSPEED\nOFF"
-			floatingButtons.Carry.BackgroundColor3 = speedMode == "Carry" and SELECTED_COLOR or BUTTON_BLACK
 		end
 
 		if floatingButtons.Bat then
 			floatingButtons.Bat.Text = batAimbotEnabled and "BAT\nAIM\nON" or "BAT\nAIM\nOFF"
-			floatingButtons.Bat.BackgroundColor3 = batAimbotEnabled and SELECTED_COLOR or BUTTON_BLACK
 		end
 
 		if floatingButtons.DropTools then
@@ -4411,7 +4393,6 @@ end)
 
 		if floatingButtons.LaggerCarry then
 			floatingButtons.LaggerCarry.Text = speedMode == "Lagger Carry" and "LAGGER\nCARRY\nON" or "LAGGER\nCARRY\nOFF"
-			floatingButtons.LaggerCarry.BackgroundColor3 = speedMode == "Lagger Carry" and SELECTED_COLOR or BUTTON_BLACK
 		end
 
 		if floatingButtons.TPDown then
@@ -4420,7 +4401,6 @@ end)
 
 		if floatingButtons.Lagger then
 			floatingButtons.Lagger.Text = speedMode == "Lagger" and "LAGGER\nMODE\nON" or "LAGGER\nMODE\nOFF"
-			floatingButtons.Lagger.BackgroundColor3 = speedMode == "Lagger" and SELECTED_COLOR or BUTTON_BLACK
 		end
 	end
 
@@ -4620,7 +4600,7 @@ RunService.RenderStepped:Connect(function()
 				screenGui:SetAttribute("BatCounterLastJumpTime", now)
 			end
 
-			if screenGui:GetAttribute("BatCounterEnabled") ~= true or batAimbotEnabled then
+			if screenGui:GetAttribute("BatCounterEnabled") ~= true then
 				screenGui:SetAttribute("BatCounterLastVelocity", velocity.Magnitude)
 				return
 			end
@@ -4659,7 +4639,7 @@ RunService.RenderStepped:Connect(function()
 
 			local looksLikeBatHit =
 				strongRagdollState
-				or ((flatSpeed > 42 or ySpeed > 65) and velocitySpike and not recentlyJumped)
+				or (((flatSpeed > 42) or (ySpeed > 65)) and velocitySpike and not recentlyJumped)
 
 			if not looksLikeBatHit then
 				screenGui:SetAttribute("BatCounterLastVelocity", velocity.Magnitude)
@@ -4672,7 +4652,7 @@ RunService.RenderStepped:Connect(function()
 				lastCounterTime = 0
 			end
 
-			if now - lastCounterTime < 0.55 then
+			if now - lastCounterTime < 0.9 then
 				return
 			end
 
@@ -4715,8 +4695,8 @@ RunService.RenderStepped:Connect(function()
 				end)
 			end
 
-			screenGui:SetAttribute("BatCounterBusyUntil", now + 0.55)
-			screenGui:SetAttribute("MedusaCounterBlockUntil", now + 0.75)
+			screenGui:SetAttribute("BatCounterBusyUntil", now + 1.05)
+			screenGui:SetAttribute("MedusaCounterBlockUntil", now + 1.25)
 
 			task.spawn(function()
 				task.wait(0.01)
@@ -4762,16 +4742,9 @@ RunService.RenderStepped:Connect(function()
 			local velocity = humanoidRootPart.AssemblyLinearVelocity
 			local flatSpeed = Vector3.new(velocity.X, 0, velocity.Z).Magnitude
 			local looksFrozen = false
+			local hasFreezeMarker = false
 
-			if humanoid.PlatformStand
-				or currentState == Enum.HumanoidStateType.PlatformStanding
-				or currentState == Enum.HumanoidStateType.Physics then
-				if flatSpeed < 18 and math.abs(velocity.Y) < 18 then
-					looksFrozen = true
-				end
-			end
-
-			if not looksFrozen and character then
+			if character then
 				for _, object in ipairs(character:GetDescendants()) do
 					if not object:IsA("Tool") and not object:FindFirstAncestorOfClass("Tool") then
 						local lowerName = string.lower(object.Name or "")
@@ -4781,10 +4754,22 @@ RunService.RenderStepped:Connect(function()
 							or string.find(lowerName, "petrified", 1, true)
 							or string.find(lowerName, "freeze", 1, true)
 							or string.find(lowerName, "frozen", 1, true) then
-							looksFrozen = true
+							hasFreezeMarker = true
 							break
 						end
 					end
+				end
+			end
+
+			if hasFreezeMarker then
+				looksFrozen = true
+			elseif screenGui:GetAttribute("BatCounterEnabled") == true then
+				return
+			elseif humanoid.PlatformStand
+				or currentState == Enum.HumanoidStateType.PlatformStanding
+				or currentState == Enum.HumanoidStateType.Physics then
+				if flatSpeed < 18 and math.abs(velocity.Y) < 18 then
+					looksFrozen = true
 				end
 			end
 
@@ -4840,7 +4825,7 @@ RunService.RenderStepped:Connect(function()
 			end
 
 			task.spawn(function()
-				for _ = 1, 4 do
+				for _ = 1, 2 do
 					if medusaTool and medusaTool.Parent then
 						pcall(function()
 							medusaTool:Activate()
@@ -4857,4 +4842,4 @@ RunService.RenderStepped:Connect(function()
 	end
 end)
 
-setStatus("Repair loaded: bat counter/drop restored, no auto bat pull.")
+setStatus("V91 loaded: sections connected, title detached.")
