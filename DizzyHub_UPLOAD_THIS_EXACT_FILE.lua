@@ -1,4 +1,4 @@
-__DIZZY_UPLOAD_VERSION = "CARRY_JUMP_POWER_58_LAGFIX"
+__DIZZY_UPLOAD_VERSION = "CARRY_JUMP_POWER_62_LAGFIX"
 __DIZZY_JUMP_CACHE = __DIZZY_JUMP_CACHE or {UntilTime = 0, Result = false, LastStatusTime = 0, LastDeepScanTime = 0}
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -2708,7 +2708,7 @@ local function performAirJump()
 	local horizontalMultiplier = 1
 
 	if holdingCarryObject then
-		jumpPower = 58
+		jumpPower = 62
 		horizontalMultiplier = 0.96
 	end
 
