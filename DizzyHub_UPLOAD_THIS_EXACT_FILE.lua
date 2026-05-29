@@ -1,4 +1,4 @@
-__DIZZY_UPLOAD_VERSION = "CARRY62_AUTOTP_HEIGHT_DROPPAUSE_BLUEBUTTONS"
+__DIZZY_UPLOAD_VERSION = "CARRY62_AUTOTP_BLUE_DROPPAUSE_LOADFIX2"
 __DIZZY_JUMP_CACHE = __DIZZY_JUMP_CACHE or {UntilTime = 0, Result = false, LastStatusTime = 0, LastDeepScanTime = 0}
 __DIZZY_DROP_SUPPRESS_TOOL_UNTIL = __DIZZY_DROP_SUPPRESS_TOOL_UNTIL or 0
 local Players = game:GetService("Players")
@@ -131,7 +131,7 @@ local lastAutoTpDownHeight = 0
 local autoTpDownIgnoreUntil = 0
 local autoTpDownPausedForDrop = false
 local autoTpDownRestoreTaskRunning = false
-local AUTO_TP_DOWN_DROP_RESTORE_TIMEOUT = 3.0
+local AUTO_TP_DOWN_DROP_RESTORE_TIMEOUT = 3
 local AUTO_TP_DOWN_RESTORE_IGNORE_TIME = 0.45
 
 local AIR_JUMP_POWER = 72
@@ -497,6 +497,7 @@ local function setAutoTpDownHeight(value)
 	value = tonumber(value) or autoTpDownHeight
 	autoTpDownHeight = math.clamp(math.floor(value + 0.5), MIN_AUTO_TP_DOWN_HEIGHT, MAX_AUTO_TP_DOWN_HEIGHT)
 	lastAutoTpDownHeight = getHeightAboveGround() or 0
+	autoTpDownIgnoreUntil = os.clock() + 0.15
 
 	if autoTpDownHeightLabel and autoTpDownHeightLabel.Parent then
 		autoTpDownHeightLabel.Text = tostring(autoTpDownHeight)
@@ -542,13 +543,12 @@ local function updateAutoTpDown()
 	end
 
 	local selectedHeight = math.clamp(autoTpDownHeight, MIN_AUTO_TP_DOWN_HEIGHT, MAX_AUTO_TP_DOWN_HEIGHT)
-	local previousHeight = lastAutoTpDownHeight or 0
-	local crossedSelectedHeight = previousHeight < selectedHeight and height >= selectedHeight
+	local crossedSelectedHeight = (lastAutoTpDownHeight or 0) < selectedHeight and height >= selectedHeight
 	local yVelocity = humanoidRootPart.AssemblyLinearVelocity.Y
 
 	lastAutoTpDownHeight = height
 
-	if crossedSelectedHeight and yVelocity > 3 then
+	if crossedSelectedHeight and yVelocity > 2 then
 		lastAutoTpDownTime = now
 		setStatus("Auto TP Down triggered at height " .. tostring(selectedHeight) .. ".")
 		tpDownToGround()
@@ -556,19 +556,16 @@ local function updateAutoTpDown()
 end
 
 local function pauseAutoTpDownForDrop()
-	local now = os.clock()
-	autoTpDownIgnoreUntil = math.max(autoTpDownIgnoreUntil, now + 1.25)
+	autoTpDownIgnoreUntil = os.clock() + 1.25
 
-	if not autoTpDownEnabled and not autoTpDownPausedForDrop then
+	if not autoTpDownEnabled then
 		return
 	end
 
-	if autoTpDownEnabled then
-		autoTpDownEnabled = false
-		autoTpDownPausedForDrop = true
-		lastAutoTpDownHeight = 0
-		updateFloatingButtons()
-	end
+	autoTpDownEnabled = false
+	autoTpDownPausedForDrop = true
+	lastAutoTpDownHeight = 0
+	updateFloatingButtons()
 
 	if autoTpDownRestoreTaskRunning then
 		return
@@ -600,6 +597,7 @@ local function pauseAutoTpDownForDrop()
 		end
 	end)
 end
+
 local function objectHasCashText(object)
 	local textToCheck = string.lower(object.Name or "")
 
@@ -2563,8 +2561,8 @@ local function safeAvatarPopForDropV67()
 end
 
 local function safeLocalDropHeld()
-	pauseAutoTpDownForDrop()
 	local now = os.clock()
+	pauseAutoTpDownForDrop()
 
 	__DIZZY_DROP_SUPPRESS_TOOL_UNTIL = now + 1.5
 	toolGuardUntil = 0
@@ -4457,27 +4455,27 @@ end)
 		end
 
 		if floatingButtons.AutoLeft then
-			local active = autoMoving and currentAutoSide == "Left"
-			floatingButtons.AutoLeft.Text = active and "STOP\nLEFT" or "AUTO\nLEFT"
-			setButtonActive(floatingButtons.AutoLeft, active)
+			local isActive = autoMoving and currentAutoSide == "Left"
+			floatingButtons.AutoLeft.Text = isActive and "STOP\nLEFT" or "AUTO\nLEFT"
+			setButtonActive(floatingButtons.AutoLeft, isActive)
 		end
 
 		if floatingButtons.AutoRight then
-			local active = autoMoving and currentAutoSide == "Right"
-			floatingButtons.AutoRight.Text = active and "STOP\nRIGHT" or "AUTO\nRIGHT"
-			setButtonActive(floatingButtons.AutoRight, active)
+			local isActive = autoMoving and currentAutoSide == "Right"
+			floatingButtons.AutoRight.Text = isActive and "STOP\nRIGHT" or "AUTO\nRIGHT"
+			setButtonActive(floatingButtons.AutoRight, isActive)
 		end
 
 		if floatingButtons.Carry then
-			local active = speedMode == "Carry"
-			floatingButtons.Carry.Text = active and "CARRY\nSPEED\nON" or "CARRY\nSPEED\nOFF"
-			setButtonActive(floatingButtons.Carry, active)
+			local isActive = speedMode == "Carry"
+			floatingButtons.Carry.Text = isActive and "CARRY\nSPEED\nON" or "CARRY\nSPEED\nOFF"
+			setButtonActive(floatingButtons.Carry, isActive)
 		end
 
 		if floatingButtons.Bat then
-			local active = batAimbotEnabled
-			floatingButtons.Bat.Text = active and "BAT\nAIM\nON" or "BAT\nAIM\nOFF"
-			setButtonActive(floatingButtons.Bat, active)
+			local isActive = batAimbotEnabled
+			floatingButtons.Bat.Text = isActive and "BAT\nAIM\nON" or "BAT\nAIM\nOFF"
+			setButtonActive(floatingButtons.Bat, isActive)
 		end
 
 		if floatingButtons.DropTools then
@@ -4486,9 +4484,9 @@ end)
 		end
 
 		if floatingButtons.LaggerCarry then
-			local active = speedMode == "Lagger Carry"
-			floatingButtons.LaggerCarry.Text = active and "LAGGER\nCARRY\nON" or "LAGGER\nCARRY\nOFF"
-			setButtonActive(floatingButtons.LaggerCarry, active)
+			local isActive = speedMode == "Lagger Carry"
+			floatingButtons.LaggerCarry.Text = isActive and "LAGGER\nCARRY\nON" or "LAGGER\nCARRY\nOFF"
+			setButtonActive(floatingButtons.LaggerCarry, isActive)
 		end
 
 		if floatingButtons.TPDown then
@@ -4497,11 +4495,12 @@ end)
 		end
 
 		if floatingButtons.Lagger then
-			local active = speedMode == "Lagger"
-			floatingButtons.Lagger.Text = active and "LAGGER\nMODE\nON" or "LAGGER\nMODE\nOFF"
-			setButtonActive(floatingButtons.Lagger, active)
+			local isActive = speedMode == "Lagger"
+			floatingButtons.Lagger.Text = isActive and "LAGGER\nMODE\nON" or "LAGGER\nMODE\nOFF"
+			setButtonActive(floatingButtons.Lagger, isActive)
 		end
 	end
+
 	floatingButtonGroup = Instance.new("Frame")
 	floatingButtonGroup.Name = "DizzyFloatingButtonGroup"
 	floatingButtonGroup.Size = UDim2.new(0, 158, 0, 326)
