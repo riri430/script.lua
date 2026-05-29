@@ -1,6 +1,10 @@
-__DIZZY_UPLOAD_VERSION = "CARRY62_AUTOTP_BLUE_DROPPAUSE_LOADFIX2"
+__DIZZY_UPLOAD_VERSION = "CARRY62_AUTOTP_BLUE_DROPPAUSE_LOADFIX3"
 __DIZZY_JUMP_CACHE = __DIZZY_JUMP_CACHE or {UntilTime = 0, Result = false, LastStatusTime = 0, LastDeepScanTime = 0}
 __DIZZY_DROP_SUPPRESS_TOOL_UNTIL = __DIZZY_DROP_SUPPRESS_TOOL_UNTIL or 0
+__DIZZY_ACTIVE_BUTTON_BLUE = __DIZZY_ACTIVE_BUTTON_BLUE or Color3.fromRGB(18, 48, 105)
+__DIZZY_AUTOTP_IGNORE_UNTIL = __DIZZY_AUTOTP_IGNORE_UNTIL or 0
+__DIZZY_AUTOTP_PAUSED_FOR_DROP = __DIZZY_AUTOTP_PAUSED_FOR_DROP or false
+__DIZZY_AUTOTP_RESTORE_RUNNING = __DIZZY_AUTOTP_RESTORE_RUNNING or false
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -19,7 +23,6 @@ local PANEL_COLOR = Color3.fromRGB(25, 25, 30)
 local LEFT_COLOR = Color3.fromRGB(32, 32, 40)
 local RIGHT_COLOR = Color3.fromRGB(36, 36, 44)
 local SELECTED_COLOR = Color3.fromRGB(70, 70, 95)
-local ACTIVE_BUTTON_BLUE = Color3.fromRGB(18, 48, 105)
 local BOX_COLOR = Color3.fromRGB(45, 45, 55)
 local SECTION_COLOR = Color3.fromRGB(50, 50, 62)
 
@@ -128,11 +131,6 @@ local MAX_AUTO_TP_DOWN_HEIGHT = 20
 local lastAutoTpDownTime = 0
 local AUTO_TP_DOWN_COOLDOWN = 0.22
 local lastAutoTpDownHeight = 0
-local autoTpDownIgnoreUntil = 0
-local autoTpDownPausedForDrop = false
-local autoTpDownRestoreTaskRunning = false
-local AUTO_TP_DOWN_DROP_RESTORE_TIMEOUT = 3
-local AUTO_TP_DOWN_RESTORE_IGNORE_TIME = 0.45
 
 local AIR_JUMP_POWER = 72
 local DOWNWARD_FORCE = -85
@@ -490,6 +488,7 @@ local function getHeightAboveGround()
 
 	local rootHalfHeight = humanoidRootPart.Size.Y / 2
 	local standingOffset = math.max((humanoid.HipHeight or 2) + rootHalfHeight - 0.35, 2.35)
+
 	return math.max(0, (origin.Y - result.Position.Y) - standingOffset)
 end
 
@@ -497,7 +496,7 @@ local function setAutoTpDownHeight(value)
 	value = tonumber(value) or autoTpDownHeight
 	autoTpDownHeight = math.clamp(math.floor(value + 0.5), MIN_AUTO_TP_DOWN_HEIGHT, MAX_AUTO_TP_DOWN_HEIGHT)
 	lastAutoTpDownHeight = getHeightAboveGround() or 0
-	autoTpDownIgnoreUntil = os.clock() + 0.15
+	__DIZZY_AUTOTP_IGNORE_UNTIL = os.clock() + 0.15
 
 	if autoTpDownHeightLabel and autoTpDownHeightLabel.Parent then
 		autoTpDownHeightLabel.Text = tostring(autoTpDownHeight)
@@ -514,7 +513,7 @@ local function updateAutoTpDown()
 		return
 	end
 
-	if now < autoTpDownIgnoreUntil then
+	if now < (__DIZZY_AUTOTP_IGNORE_UNTIL or 0) then
 		lastAutoTpDownHeight = getHeightAboveGround() or lastAutoTpDownHeight or 0
 		return
 	end
@@ -553,49 +552,6 @@ local function updateAutoTpDown()
 		setStatus("Auto TP Down triggered at height " .. tostring(selectedHeight) .. ".")
 		tpDownToGround()
 	end
-end
-
-local function pauseAutoTpDownForDrop()
-	autoTpDownIgnoreUntil = os.clock() + 1.25
-
-	if not autoTpDownEnabled then
-		return
-	end
-
-	autoTpDownEnabled = false
-	autoTpDownPausedForDrop = true
-	lastAutoTpDownHeight = 0
-	updateFloatingButtons()
-
-	if autoTpDownRestoreTaskRunning then
-		return
-	end
-
-	autoTpDownRestoreTaskRunning = true
-
-	task.spawn(function()
-		local started = os.clock()
-
-		while os.clock() - started < AUTO_TP_DOWN_DROP_RESTORE_TIMEOUT do
-			if humanoid and humanoidRootPart and humanoid.Health > 0 and humanoid.FloorMaterial ~= Enum.Material.Air then
-				break
-			end
-
-			task.wait(0.05)
-		end
-
-		autoTpDownRestoreTaskRunning = false
-
-		if autoTpDownPausedForDrop then
-			autoTpDownPausedForDrop = false
-			autoTpDownEnabled = true
-			lastAutoTpDownTime = os.clock()
-			lastAutoTpDownHeight = getHeightAboveGround() or 0
-			autoTpDownIgnoreUntil = os.clock() + AUTO_TP_DOWN_RESTORE_IGNORE_TIME
-			setStatus("Auto TP Down restored after DROP.")
-			updateFloatingButtons()
-		end
-	end)
 end
 
 local function objectHasCashText(object)
@@ -2562,7 +2518,43 @@ end
 
 local function safeLocalDropHeld()
 	local now = os.clock()
-	pauseAutoTpDownForDrop()
+
+	__DIZZY_AUTOTP_IGNORE_UNTIL = now + 1.25
+
+	if autoTpDownEnabled then
+		autoTpDownEnabled = false
+		__DIZZY_AUTOTP_PAUSED_FOR_DROP = true
+		lastAutoTpDownHeight = 0
+		updateFloatingButtons()
+
+		if not __DIZZY_AUTOTP_RESTORE_RUNNING then
+			__DIZZY_AUTOTP_RESTORE_RUNNING = true
+
+			task.spawn(function()
+				local started = os.clock()
+
+				while os.clock() - started < 3 do
+					if humanoid and humanoidRootPart and humanoid.Health > 0 and humanoid.FloorMaterial ~= Enum.Material.Air then
+						break
+					end
+
+					task.wait(0.05)
+				end
+
+				__DIZZY_AUTOTP_RESTORE_RUNNING = false
+
+				if __DIZZY_AUTOTP_PAUSED_FOR_DROP then
+					__DIZZY_AUTOTP_PAUSED_FOR_DROP = false
+					autoTpDownEnabled = true
+					lastAutoTpDownTime = os.clock()
+					lastAutoTpDownHeight = getHeightAboveGround() or 0
+					__DIZZY_AUTOTP_IGNORE_UNTIL = os.clock() + 0.45
+					setStatus("Auto TP Down restored after DROP.")
+					updateFloatingButtons()
+				end
+			end)
+		end
+	end
 
 	__DIZZY_DROP_SUPPRESS_TOOL_UNTIL = now + 1.5
 	toolGuardUntil = 0
@@ -3753,7 +3745,7 @@ local function makeToggle(parent, text, getState, callback)
 	local function refresh()
 		local enabled = getState()
 		button.Text = text .. ": " .. (enabled and "ON" or "OFF")
-		button.BackgroundColor3 = enabled and ACTIVE_BUTTON_BLUE or BUTTON_BLACK
+		button.BackgroundColor3 = enabled and __DIZZY_ACTIVE_BUTTON_BLUE or BUTTON_BLACK
 	end
 
 	button = makeButton(parent, "", 32, function()
@@ -4136,13 +4128,13 @@ elseif sectionName == "Movement" then
 				autoTpDownEnabled = not autoTpDownEnabled
 
 				if autoTpDownEnabled then
-					autoTpDownPausedForDrop = false
+					__DIZZY_AUTOTP_PAUSED_FOR_DROP = false
 					lastAutoTpDownTime = os.clock()
 					lastAutoTpDownHeight = getHeightAboveGround() or 0
-					autoTpDownIgnoreUntil = os.clock() + 0.2
+					__DIZZY_AUTOTP_IGNORE_UNTIL = os.clock() + 0.2
 					setStatus("Auto TP Down enabled at height " .. tostring(autoTpDownHeight) .. ".")
 				else
-					autoTpDownPausedForDrop = false
+					__DIZZY_AUTOTP_PAUSED_FOR_DROP = false
 					setStatus("Auto TP Down disabled.")
 				end
 
@@ -4450,7 +4442,7 @@ end)
 	updateFloatingButtons = function()
 		local function setButtonActive(button, active)
 			if button and button.Parent then
-				button.BackgroundColor3 = active and ACTIVE_BUTTON_BLUE or BUTTON_BLACK
+				button.BackgroundColor3 = active and __DIZZY_ACTIVE_BUTTON_BLUE or BUTTON_BLACK
 			end
 		end
 
