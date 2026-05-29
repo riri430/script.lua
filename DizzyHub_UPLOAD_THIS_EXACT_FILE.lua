@@ -1,10 +1,6 @@
-__DIZZY_UPLOAD_VERSION = "CARRY62_RANDOM_RESPAWN_GUARD"
+__DIZZY_UPLOAD_VERSION = "RESTORED_LAST_WORKING_DROP_NORESPAWN"
 __DIZZY_JUMP_CACHE = __DIZZY_JUMP_CACHE or {UntilTime = 0, Result = false, LastStatusTime = 0, LastDeepScanTime = 0}
 __DIZZY_DROP_SUPPRESS_TOOL_UNTIL = __DIZZY_DROP_SUPPRESS_TOOL_UNTIL or 0
-__DIZZY_LAST_SAFE_GROUND_CFRAME = __DIZZY_LAST_SAFE_GROUND_CFRAME or nil
-__DIZZY_LAST_SAFE_GROUND_TIME = __DIZZY_LAST_SAFE_GROUND_TIME or 0
-__DIZZY_RESPAWN_GUARD_COOLDOWN_UNTIL = __DIZZY_RESPAWN_GUARD_COOLDOWN_UNTIL or 0
-__DIZZY_DROP_SAFE_UNTIL = __DIZZY_DROP_SAFE_UNTIL or 0
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -2324,6 +2320,10 @@ local function enableLocalRespawnSoftener()
 	end)
 
 	pcall(function()
+		humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+	end)
+
+	pcall(function()
 		humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
 	end)
 
@@ -2331,7 +2331,6 @@ local function enableLocalRespawnSoftener()
 		humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
 	end)
 end
-
 
 local function lateDropRecovery()
 	if not humanoidRootPart or not humanoid or humanoid.Health <= 0 then
@@ -2495,7 +2494,6 @@ end
 local function safeLocalDropHeld()
 	local now = os.clock()
 
-	__DIZZY_DROP_SAFE_UNTIL = now + 2.4
 	__DIZZY_DROP_SUPPRESS_TOOL_UNTIL = now + 1.5
 	toolGuardUntil = 0
 	lastHeldTool = nil
@@ -3337,22 +3335,17 @@ local function repairCharacterJointsLight()
 	for _, object in ipairs(character:GetDescendants()) do
 		if object:IsA("Motor6D") then
 			object.Enabled = true
-		elseif object:IsA("BasePart") then
-			object.Anchored = false
-		elseif object:IsA("Constraint") then
-			local lowerName = string.lower(object.Name or "")
-
-			if string.find(lowerName, "ragdoll", 1, true)
-				or string.find(lowerName, "stun", 1, true)
-				or string.find(lowerName, "knock", 1, true) then
+		elseif isRagdollObject(object) then
+			if object:IsA("Constraint") then
 				pcall(function()
-					object.Enabled = false
+					object:Destroy()
 				end)
 			end
+		elseif object:IsA("BasePart") then
+			object.Anchored = false
 		end
 	end
 end
-
 
 local function forceFastGetUp()
 	if not humanoid or humanoid.Health <= 0 then
@@ -3531,16 +3524,12 @@ local function startAntiRagdollWatcher()
 		task.defer(function()
 			if object:IsA("Motor6D") then
 				object.Enabled = true
-			elseif object:IsA("Constraint") then
-				local lowerName = string.lower(object.Name or "")
+			elseif isRagdollObject(object) then
+				startAntiKnockbackWindow()
 
-				if string.find(lowerName, "ragdoll", 1, true)
-					or string.find(lowerName, "stun", 1, true)
-					or string.find(lowerName, "knock", 1, true) then
-					startAntiKnockbackWindow()
-
+				if object:IsA("Constraint") then
 					pcall(function()
-						object.Enabled = false
+						object:Destroy()
 					end)
 				end
 			elseif object:IsA("BasePart") then
@@ -3566,60 +3555,6 @@ local function updateAntiRagdoll()
 	end
 
 	applyAntiRagdollState()
-end
-
-local function updateRespawnGuard()
-	if not humanoid or not humanoidRootPart or humanoid.Health <= 0 then
-		return
-	end
-
-	local now = os.clock()
-	local state = humanoid:GetState()
-	local rootCFrame = humanoidRootPart.CFrame
-	local rootPosition = rootCFrame.Position
-	local velocity = humanoidRootPart.AssemblyLinearVelocity
-
-	if humanoid.FloorMaterial ~= Enum.Material.Air
-		and state ~= Enum.HumanoidStateType.Dead
-		and not humanoidRootPart.Anchored then
-		__DIZZY_LAST_SAFE_GROUND_CFRAME = rootCFrame
-		__DIZZY_LAST_SAFE_GROUND_TIME = now
-	end
-
-	if not __DIZZY_LAST_SAFE_GROUND_CFRAME then
-		return
-	end
-
-	if now < (__DIZZY_RESPAWN_GUARD_COOLDOWN_UNTIL or 0) then
-		return
-	end
-
-	local fallenHeight = workspace.FallenPartsDestroyHeight or -500
-	local tooLow = rootPosition.Y <= fallenHeight + 55
-	local safeY = __DIZZY_LAST_SAFE_GROUND_CFRAME.Position.Y
-	local tooFarBelowSafe = rootPosition.Y < safeY - 130 and velocity.Y < -95
-	local inDropWindow = now < (__DIZZY_DROP_SAFE_UNTIL or 0)
-	local extremeDownVelocity = (not inDropWindow) and velocity.Y < -260 and now - (__DIZZY_LAST_SAFE_GROUND_TIME or 0) < 6
-
-	if not tooLow and not tooFarBelowSafe and not extremeDownVelocity then
-		return
-	end
-
-	__DIZZY_RESPAWN_GUARD_COOLDOWN_UNTIL = now + 0.45
-
-	local safeCFrame = __DIZZY_LAST_SAFE_GROUND_CFRAME
-	local safePosition = safeCFrame.Position + Vector3.new(0, 3, 0)
-	local safeLook = safeCFrame.LookVector
-
-	pcall(function()
-		humanoid.PlatformStand = false
-		humanoid.Sit = false
-		humanoid.AutoRotate = true
-		humanoidRootPart.CFrame = CFrame.new(safePosition, safePosition + safeLook)
-		humanoidRootPart.AssemblyLinearVelocity = Vector3.zero
-		humanoidRootPart.AssemblyAngularVelocity = Vector3.zero
-		humanoid:ChangeState(Enum.HumanoidStateType.Running)
-	end)
 end
 
 local function makePanelDraggable(handle, frame)
@@ -4642,7 +4577,6 @@ RunService.RenderStepped:Connect(function()
 	if humanoid and humanoid.Health > 0 then
 		rememberMoveDirection()
 		keepGuiButtonsAlive()
-		updateRespawnGuard()
 
 		if not isAirborne() then
 			resetJumpSequence()
