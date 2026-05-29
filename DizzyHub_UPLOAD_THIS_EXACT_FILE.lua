@@ -1,7 +1,6 @@
-__DIZZY_UPLOAD_VERSION = "FIXED_ONLY_BATPULL_RESPAWN_BLUE_AR"
+__DIZZY_UPLOAD_VERSION = "REPAIR_RESTORE_BATCOUNTER_DROP_NOAUTOPULL"
 __DIZZY_JUMP_CACHE = __DIZZY_JUMP_CACHE or {UntilTime = 0, Result = false, LastStatusTime = 0, LastDeepScanTime = 0}
 __DIZZY_DROP_SUPPRESS_TOOL_UNTIL = __DIZZY_DROP_SUPPRESS_TOOL_UNTIL or 0
-__DIZZY_TOOL_REEQUIP_SUPPRESS_UNTIL = __DIZZY_TOOL_REEQUIP_SUPPRESS_UNTIL or 0
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -1241,10 +1240,6 @@ local function reEquipLastHeldTool()
 		return
 	end
 
-	if __DIZZY_TOOL_REEQUIP_SUPPRESS_UNTIL and os.clock() < __DIZZY_TOOL_REEQUIP_SUPPRESS_UNTIL then
-		return
-	end
-
 	if not lastHeldTool then
 		return
 	end
@@ -1270,6 +1265,7 @@ local function reEquipLastHeldTool()
 	if backpack and lastHeldTool.Parent == backpack then
 		pcall(function()
 			lastHeldTool.CanBeDropped = false
+			humanoid:EquipTool(lastHeldTool)
 		end)
 	end
 end
@@ -2324,6 +2320,10 @@ local function enableLocalRespawnSoftener()
 	end)
 
 	pcall(function()
+		humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+	end)
+
+	pcall(function()
 		humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
 	end)
 
@@ -2495,7 +2495,6 @@ local function safeLocalDropHeld()
 	local now = os.clock()
 
 	__DIZZY_DROP_SUPPRESS_TOOL_UNTIL = now + 1.5
-	__DIZZY_TOOL_REEQUIP_SUPPRESS_UNTIL = now + 2.5
 	toolGuardUntil = 0
 	lastHeldTool = nil
 
@@ -2592,7 +2591,18 @@ local function startToolGuard()
 		return
 	end
 
+	if isProtectedToolName(tool.Name) then
+		toolGuardUntil = 0
+		return
+	end
+
 	toolGuardUntil = os.clock() + TOOL_GUARD_TIME
+
+	task.defer(reEquipLastHeldTool)
+
+	task.delay(0.08, reEquipLastHeldTool)
+	task.delay(0.22, reEquipLastHeldTool)
+	task.delay(0.45, reEquipLastHeldTool)
 end
 
 local function updateToolGuard()
@@ -2600,11 +2610,12 @@ local function updateToolGuard()
 		return
 	end
 
-	local tool = getHeldTool()
-
-	if tool then
-		protectTool(tool)
+	if lastHeldTool and isProtectedToolName(lastHeldTool.Name) then
+		toolGuardUntil = 0
+		return
 	end
+
+	reEquipLastHeldTool()
 end
 
 local function getJumpPreserveFlatVelocity(currentVelocity, multiplier)
@@ -3337,7 +3348,7 @@ local function repairCharacterJointsLight()
 		elseif isRagdollObject(object) then
 			if object:IsA("Constraint") then
 				pcall(function()
-					object.Enabled = false
+					object:Destroy()
 				end)
 			end
 		elseif object:IsA("BasePart") then
@@ -3528,7 +3539,7 @@ local function startAntiRagdollWatcher()
 
 				if object:IsA("Constraint") then
 					pcall(function()
-						object.Enabled = false
+						object:Destroy()
 					end)
 				end
 			elseif object:IsA("BasePart") then
@@ -4250,7 +4261,7 @@ end)
 			makeInfo(contentArea, "Settings.")
 
 			makeButton(contentArea, "Reset Status Text", 42, function()
-				setStatus("Fixed: no bat auto-pull, Bat priority, blue buttons, safer anti-ragdoll.")
+				setStatus("Repair loaded: bat counter/drop restored, no auto bat pull.")
 			end)
 
 			makeButton(contentArea, "Destroy GUI", 42, function()
@@ -4376,22 +4387,22 @@ end)
 	updateFloatingButtons = function()
 		if floatingButtons.AutoLeft then
 			floatingButtons.AutoLeft.Text = autoMoving and currentAutoSide == "Left" and "STOP\nLEFT" or "AUTO\nLEFT"
-			floatingButtons.AutoLeft.BackgroundColor3 = autoMoving and currentAutoSide == "Left" and Color3.fromRGB(15, 32, 92) or BUTTON_BLACK
+			floatingButtons.AutoLeft.BackgroundColor3 = autoMoving and currentAutoSide == "Left" and SELECTED_COLOR or BUTTON_BLACK
 		end
 
 		if floatingButtons.AutoRight then
 			floatingButtons.AutoRight.Text = autoMoving and currentAutoSide == "Right" and "STOP\nRIGHT" or "AUTO\nRIGHT"
-			floatingButtons.AutoRight.BackgroundColor3 = autoMoving and currentAutoSide == "Right" and Color3.fromRGB(15, 32, 92) or BUTTON_BLACK
+			floatingButtons.AutoRight.BackgroundColor3 = autoMoving and currentAutoSide == "Right" and SELECTED_COLOR or BUTTON_BLACK
 		end
 
 		if floatingButtons.Carry then
 			floatingButtons.Carry.Text = speedMode == "Carry" and "CARRY\nSPEED\nON" or "CARRY\nSPEED\nOFF"
-			floatingButtons.Carry.BackgroundColor3 = speedMode == "Carry" and Color3.fromRGB(15, 32, 92) or BUTTON_BLACK
+			floatingButtons.Carry.BackgroundColor3 = speedMode == "Carry" and SELECTED_COLOR or BUTTON_BLACK
 		end
 
 		if floatingButtons.Bat then
 			floatingButtons.Bat.Text = batAimbotEnabled and "BAT\nAIM\nON" or "BAT\nAIM\nOFF"
-			floatingButtons.Bat.BackgroundColor3 = batAimbotEnabled and Color3.fromRGB(15, 32, 92) or BUTTON_BLACK
+			floatingButtons.Bat.BackgroundColor3 = batAimbotEnabled and SELECTED_COLOR or BUTTON_BLACK
 		end
 
 		if floatingButtons.DropTools then
@@ -4400,7 +4411,7 @@ end)
 
 		if floatingButtons.LaggerCarry then
 			floatingButtons.LaggerCarry.Text = speedMode == "Lagger Carry" and "LAGGER\nCARRY\nON" or "LAGGER\nCARRY\nOFF"
-			floatingButtons.LaggerCarry.BackgroundColor3 = speedMode == "Lagger Carry" and Color3.fromRGB(15, 32, 92) or BUTTON_BLACK
+			floatingButtons.LaggerCarry.BackgroundColor3 = speedMode == "Lagger Carry" and SELECTED_COLOR or BUTTON_BLACK
 		end
 
 		if floatingButtons.TPDown then
@@ -4409,7 +4420,7 @@ end)
 
 		if floatingButtons.Lagger then
 			floatingButtons.Lagger.Text = speedMode == "Lagger" and "LAGGER\nMODE\nON" or "LAGGER\nMODE\nOFF"
-			floatingButtons.Lagger.BackgroundColor3 = speedMode == "Lagger" and Color3.fromRGB(15, 32, 92) or BUTTON_BLACK
+			floatingButtons.Lagger.BackgroundColor3 = speedMode == "Lagger" and SELECTED_COLOR or BUTTON_BLACK
 		end
 	end
 
@@ -4609,12 +4620,7 @@ RunService.RenderStepped:Connect(function()
 				screenGui:SetAttribute("BatCounterLastJumpTime", now)
 			end
 
-			if screenGui:GetAttribute("BatCounterEnabled") ~= true then
-				screenGui:SetAttribute("BatCounterLastVelocity", velocity.Magnitude)
-				return
-			end
-
-			if batAimbotEnabled then
+			if screenGui:GetAttribute("BatCounterEnabled") ~= true or batAimbotEnabled then
 				screenGui:SetAttribute("BatCounterLastVelocity", velocity.Magnitude)
 				return
 			end
@@ -4643,10 +4649,17 @@ RunService.RenderStepped:Connect(function()
 				or currentState == Enum.HumanoidStateType.PlatformStanding
 				or currentState == Enum.HumanoidStateType.Physics
 
+			local previousVelocity = screenGui:GetAttribute("BatCounterLastVelocity")
+
+			if typeof(previousVelocity) ~= "number" then
+				previousVelocity = velocity.Magnitude
+			end
+
+			local velocitySpike = velocity.Magnitude - previousVelocity > 18
+
 			local looksLikeBatHit =
 				strongRagdollState
-				or (flatSpeed > 95 and not recentlyJumped)
-				or (ySpeed > 75 and not recentlyJumped)
+				or ((flatSpeed > 42 or ySpeed > 65) and velocitySpike and not recentlyJumped)
 
 			if not looksLikeBatHit then
 				screenGui:SetAttribute("BatCounterLastVelocity", velocity.Magnitude)
@@ -4703,7 +4716,7 @@ RunService.RenderStepped:Connect(function()
 			end
 
 			screenGui:SetAttribute("BatCounterBusyUntil", now + 0.55)
-			screenGui:SetAttribute("MedusaCounterLastTime", now + 0.85)
+			screenGui:SetAttribute("MedusaCounterBlockUntil", now + 0.75)
 
 			task.spawn(function()
 				task.wait(0.01)
@@ -4729,6 +4742,12 @@ RunService.RenderStepped:Connect(function()
 			end
 
 			local now = os.clock()
+			local medusaBlockedUntil = screenGui:GetAttribute("MedusaCounterBlockUntil")
+
+			if typeof(medusaBlockedUntil) == "number" and now < medusaBlockedUntil then
+				return
+			end
+
 			local lastCounterTime = screenGui:GetAttribute("MedusaCounterLastTime")
 
 			if typeof(lastCounterTime) ~= "number" then
@@ -4754,7 +4773,7 @@ RunService.RenderStepped:Connect(function()
 
 			if not looksFrozen and character then
 				for _, object in ipairs(character:GetDescendants()) do
-					if not object:IsA("Tool") then
+					if not object:IsA("Tool") and not object:FindFirstAncestorOfClass("Tool") then
 						local lowerName = string.lower(object.Name or "")
 
 						if string.find(lowerName, "stone", 1, true)
@@ -4838,4 +4857,4 @@ RunService.RenderStepped:Connect(function()
 	end
 end)
 
-setStatus("Fixed: no bat auto-pull, Bat priority, blue buttons, safer anti-ragdoll.")
+setStatus("Repair loaded: bat counter/drop restored, no auto bat pull.")
