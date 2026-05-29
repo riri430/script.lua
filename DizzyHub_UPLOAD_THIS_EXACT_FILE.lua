@@ -1,4 +1,4 @@
-__DIZZY_UPLOAD_VERSION = "RESTORED_LAST_WORKING_DROP_NORESPAWN"
+__DIZZY_UPLOAD_VERSION = "AR_BLUE_SAFE_NORESPAWN_FIX"
 __DIZZY_JUMP_CACHE = __DIZZY_JUMP_CACHE or {UntilTime = 0, Result = false, LastStatusTime = 0, LastDeepScanTime = 0}
 __DIZZY_DROP_SUPPRESS_TOOL_UNTIL = __DIZZY_DROP_SUPPRESS_TOOL_UNTIL or 0
 local Players = game:GetService("Players")
@@ -15,6 +15,7 @@ local screenGui
 local mainFrame
 local statusLabel
 local BUTTON_BLACK = Color3.fromRGB(0, 0, 0)
+local ACTIVE_BUTTON_BLUE = Color3.fromRGB(18, 42, 95)
 local PANEL_COLOR = Color3.fromRGB(25, 25, 30)
 local LEFT_COLOR = Color3.fromRGB(32, 32, 40)
 local RIGHT_COLOR = Color3.fromRGB(36, 36, 44)
@@ -2320,10 +2321,6 @@ local function enableLocalRespawnSoftener()
 	end)
 
 	pcall(function()
-		humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
-	end)
-
-	pcall(function()
 		humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
 	end)
 
@@ -3338,7 +3335,7 @@ local function repairCharacterJointsLight()
 		elseif isRagdollObject(object) then
 			if object:IsA("Constraint") then
 				pcall(function()
-					object:Destroy()
+					object.Enabled = false
 				end)
 			end
 		elseif object:IsA("BasePart") then
@@ -3529,7 +3526,7 @@ local function startAntiRagdollWatcher()
 
 				if object:IsA("Constraint") then
 					pcall(function()
-						object:Destroy()
+						object.Enabled = false
 					end)
 				end
 			elseif object:IsA("BasePart") then
@@ -4375,36 +4372,56 @@ end)
 	end
 
 	updateFloatingButtons = function()
+		local function setFloatingActive(button, active)
+			if button and button.Parent then
+				button.BackgroundColor3 = active and ACTIVE_BUTTON_BLUE or BUTTON_BLACK
+			end
+		end
+
 		if floatingButtons.AutoLeft then
-			floatingButtons.AutoLeft.Text = autoMoving and currentAutoSide == "Left" and "STOP\nLEFT" or "AUTO\nLEFT"
+			local active = autoMoving and currentAutoSide == "Left"
+			floatingButtons.AutoLeft.Text = active and "STOP\nLEFT" or "AUTO\nLEFT"
+			setFloatingActive(floatingButtons.AutoLeft, active)
 		end
 
 		if floatingButtons.AutoRight then
-			floatingButtons.AutoRight.Text = autoMoving and currentAutoSide == "Right" and "STOP\nRIGHT" or "AUTO\nRIGHT"
+			local active = autoMoving and currentAutoSide == "Right"
+			floatingButtons.AutoRight.Text = active and "STOP\nRIGHT" or "AUTO\nRIGHT"
+			setFloatingActive(floatingButtons.AutoRight, active)
 		end
 
 		if floatingButtons.Carry then
-			floatingButtons.Carry.Text = speedMode == "Carry" and "CARRY\nSPEED\nON" or "CARRY\nSPEED\nOFF"
+			local active = speedMode == "Carry"
+			floatingButtons.Carry.Text = active and "CARRY\nSPEED\nON" or "CARRY\nSPEED\nOFF"
+			setFloatingActive(floatingButtons.Carry, active)
 		end
 
 		if floatingButtons.Bat then
-			floatingButtons.Bat.Text = batAimbotEnabled and "BAT\nAIM\nON" or "BAT\nAIM\nOFF"
+			local active = batAimbotEnabled
+			floatingButtons.Bat.Text = active and "BAT\nAIM\nON" or "BAT\nAIM\nOFF"
+			setFloatingActive(floatingButtons.Bat, active)
 		end
 
 		if floatingButtons.DropTools then
 			floatingButtons.DropTools.Text = "DROP"
+			setFloatingActive(floatingButtons.DropTools, false)
 		end
 
 		if floatingButtons.LaggerCarry then
-			floatingButtons.LaggerCarry.Text = speedMode == "Lagger Carry" and "LAGGER\nCARRY\nON" or "LAGGER\nCARRY\nOFF"
+			local active = speedMode == "Lagger Carry"
+			floatingButtons.LaggerCarry.Text = active and "LAGGER\nCARRY\nON" or "LAGGER\nCARRY\nOFF"
+			setFloatingActive(floatingButtons.LaggerCarry, active)
 		end
 
 		if floatingButtons.TPDown then
 			floatingButtons.TPDown.Text = "TP\nDOWN"
+			setFloatingActive(floatingButtons.TPDown, false)
 		end
 
 		if floatingButtons.Lagger then
-			floatingButtons.Lagger.Text = speedMode == "Lagger" and "LAGGER\nMODE\nON" or "LAGGER\nMODE\nOFF"
+			local active = speedMode == "Lagger"
+			floatingButtons.Lagger.Text = active and "LAGGER\nMODE\nON" or "LAGGER\nMODE\nOFF"
+			setFloatingActive(floatingButtons.Lagger, active)
 		end
 	end
 
