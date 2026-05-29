@@ -1,4 +1,4 @@
-__DIZZY_UPLOAD_VERSION = "CARRY62_DROP_SLIGHTLY_MORE_POWER_NO_BAT_PULL"
+__DIZZY_UPLOAD_VERSION = "CARRY62_DROP_NO_RESPAWN_NO_BAT_PULL"
 __DIZZY_JUMP_CACHE = __DIZZY_JUMP_CACHE or {UntilTime = 0, Result = false, LastStatusTime = 0, LastDeepScanTime = 0}
 __DIZZY_DROP_SUPPRESS_TOOL_UNTIL = __DIZZY_DROP_SUPPRESS_TOOL_UNTIL or 0
 local Players = game:GetService("Players")
@@ -132,11 +132,11 @@ local AIR_JUMP_POWER = 72
 local DOWNWARD_FORCE = -85
 local SOFT_DOWNWARD_FORCE_WHILE_HOLDING = -62
 local CARRY_JUMP_DOWN_FORCE_V49 = -55
-local DROP_POP_UP_FORCE_V67 = 245
-local DROP_POP_DOWN_FORCE_V67 = -370
-local DROP_POP_UP_TIME_V67 = 0.095
-local DROP_POP_RECOVER_TIME_V67 = 0.16
-local DROP_POP_SNAP_UP_STUDS_V67 = 32
+local DROP_POP_UP_FORCE_V67 = 235
+local DROP_POP_DOWN_FORCE_V67 = -340
+local DROP_POP_UP_TIME_V67 = 0.065
+local DROP_POP_RECOVER_TIME_V67 = 0.095
+local DROP_POP_SNAP_UP_STUDS_V67 = 28
 local CARRY_SAFE_DOWNWARD_FORCE = -30
 local CARRY_SAFE_DOWNWARD_TIME = 0.34
 local MIN_AIR_JUMP_INTERVAL = 0.2
@@ -193,10 +193,10 @@ local DROP_PROMPT_KEYWORDS = {
 
 local DROP_PROMPT_RADIUS = 18
 
-local FLING_DROP_UP_POWER = 730
-local FLING_DROP_FORWARD_POWER = 135
+local FLING_DROP_UP_POWER = 725
+local FLING_DROP_FORWARD_POWER = 130
 local FLING_DROP_AVATAR_UP_POWER = 170
-local FLING_DROP_OBJECT_HEIGHT = 120
+local FLING_DROP_OBJECT_HEIGHT = 118
 
 local FLING_DROP_DOWN_DELAY = 0.055
 local FLING_DROP_DOWN_DELAY_2 = 0.14
@@ -2431,6 +2431,28 @@ local function safeAvatarPopForDropV67()
 		humanoid.AutoRotate = true
 	end)
 
+	pcall(function()
+		enableLocalRespawnSoftener()
+	end)
+
+	local function recoverDropPosition()
+		if not humanoidRootPart or not humanoid or humanoid.Health <= 0 then
+			return
+		end
+
+		local safePosition = startCFrame.Position + Vector3.new(0, 2, 0)
+		humanoidRootPart.CFrame = CFrame.new(safePosition, safePosition + startCFrame.LookVector)
+		humanoidRootPart.AssemblyLinearVelocity = Vector3.zero
+		humanoidRootPart.AssemblyAngularVelocity = Vector3.zero
+
+		pcall(function()
+			humanoid.PlatformStand = false
+			humanoid.Sit = false
+			humanoid.AutoRotate = true
+			humanoid:ChangeState(Enum.HumanoidStateType.Running)
+		end)
+	end
+
 	local upPosition = startCFrame.Position + Vector3.new(0, DROP_POP_SNAP_UP_STUDS_V67, 0)
 	humanoidRootPart.CFrame = CFrame.new(upPosition, upPosition + startCFrame.LookVector)
 	humanoidRootPart.AssemblyLinearVelocity = Vector3.new(0, DROP_POP_UP_FORCE_V67, 0)
@@ -2451,10 +2473,7 @@ local function safeAvatarPopForDropV67()
 		return false
 	end
 
-	local safePosition = startCFrame.Position + Vector3.new(0, 3, 0)
-	humanoidRootPart.CFrame = CFrame.new(safePosition, safePosition + startCFrame.LookVector)
-	humanoidRootPart.AssemblyLinearVelocity = Vector3.zero
-	humanoidRootPart.AssemblyAngularVelocity = Vector3.zero
+	recoverDropPosition()
 
 	pcall(function()
 		humanoid.Health = math.max(humanoid.Health, math.min(startHealth, humanoid.MaxHealth))
@@ -2464,6 +2483,10 @@ local function safeAvatarPopForDropV67()
 		humanoid.AutoRotate = true
 		humanoid:ChangeState(Enum.HumanoidStateType.Running)
 	end)
+
+	task.delay(0.05, recoverDropPosition)
+	task.delay(0.15, recoverDropPosition)
+	task.delay(0.35, recoverDropPosition)
 
 	return true
 end
