@@ -1,4 +1,4 @@
-local __DIZZY_UPLOAD_VERSION = "UPLOAD_THIS_EXACT_FILE_NO_DROP_LOADSAFE"
+__DIZZY_UPLOAD_VERSION = "REAL_LOAD_FIXED_GLOBAL_FUNCTIONS"
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -225,17 +225,17 @@ local floatingButtons = {}
 local floatingButtonGroup = nil
 local updateFloatingButtons = function() end
 
-local function addCorner(object, radius)
+function addCorner(object, radius)
 	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(0, radius)
 	corner.Parent = object
 end
 
-local function setStatus(text)
+function setStatus(text)
 	warn("[Dizzy Hub] " .. text)
 end
 
-local function clampSpeed(value)
+function clampSpeed(value)
 	value = tonumber(value)
 
 	if not value then
@@ -245,7 +245,7 @@ local function clampSpeed(value)
 	return math.clamp(value, MIN_SPEED, MAX_SPEED)
 end
 
-local function formatSpeed(value)
+function formatSpeed(value)
 	if value % 1 == 0 then
 		return tostring(math.floor(value))
 	end
@@ -253,7 +253,7 @@ local function formatSpeed(value)
 	return tostring(math.floor(value * 100 + 0.5) / 100)
 end
 
-local function getTargetSpeed()
+function getTargetSpeed()
 	if speedMode == "Carry" then
 		return carrySpeedValue
 	elseif speedMode == "Lagger" then
@@ -265,11 +265,11 @@ local function getTargetSpeed()
 	end
 end
 
-local function getAutoSpeed()
+function getAutoSpeed()
 	return math.clamp(safeSpeedValue, MIN_SPEED, MAX_SPEED)
 end
 
-local function applySpeed()
+function applySpeed()
 	if not humanoid or humanoid.Health <= 0 then
 		return
 	end
@@ -287,7 +287,7 @@ local function applySpeed()
 	humanoid.WalkSpeed = clampSpeed(getTargetSpeed())
 end
 
-local function forceLocalSpeed()
+function forceLocalSpeed()
 	if not humanoid or not humanoidRootPart or humanoid.Health <= 0 then
 		return
 	end
@@ -319,7 +319,7 @@ local function forceLocalSpeed()
 	)
 end
 
-local function getGroundHitBelow()
+function getGroundHitBelow()
 	if not character or not humanoidRootPart then
 		return nil
 	end
@@ -335,7 +335,7 @@ local function getGroundHitBelow()
 	return workspace:Raycast(origin, direction, raycastParams)
 end
 
-local function zeroCharacterVelocity()
+function zeroCharacterVelocity()
 	if not character then
 		return
 	end
@@ -348,7 +348,7 @@ local function zeroCharacterVelocity()
 	end
 end
 
-local function hardSnapToGroundOnce()
+function hardSnapToGroundOnce()
 	if not character or not humanoid or not humanoidRootPart or humanoid.Health <= 0 then
 		return false
 	end
@@ -400,7 +400,7 @@ local function hardSnapToGroundOnce()
 	return true
 end
 
-local function tpDownToGround()
+function tpDownToGround()
 	if not character or not humanoid or not humanoidRootPart or humanoid.Health <= 0 then
 		setStatus("V31 TP DOWN: character not ready.")
 		return
@@ -464,7 +464,7 @@ local function tpDownToGround()
 	end)
 end
 
-local function getHeightAboveGround()
+function getHeightAboveGround()
 	if not character or not humanoid or not humanoidRootPart or humanoid.Health <= 0 then
 		return nil
 	end
@@ -484,7 +484,7 @@ local function getHeightAboveGround()
 	return math.max(0, origin.Y - result.Position.Y)
 end
 
-local function setAutoTpDownHeight(value)
+function setAutoTpDownHeight(value)
 	value = tonumber(value) or autoTpDownHeight
 	autoTpDownHeight = math.clamp(math.floor(value + 0.5), MIN_AUTO_TP_DOWN_HEIGHT, MAX_AUTO_TP_DOWN_HEIGHT)
 	lastAutoTpDownHeight = 0
@@ -496,7 +496,7 @@ local function setAutoTpDownHeight(value)
 	setStatus("Auto TP Down height set to " .. tostring(autoTpDownHeight) .. ".")
 end
 
-local function updateAutoTpDown()
+function updateAutoTpDown()
 	if not autoTpDownEnabled then
 		lastAutoTpDownHeight = 0
 		return
@@ -528,7 +528,7 @@ local function updateAutoTpDown()
 	end
 end
 
-local function objectHasCashText(object)
+function objectHasCashText(object)
 	local textToCheck = string.lower(object.Name or "")
 
 	local success, textValue = pcall(function()
@@ -545,7 +545,7 @@ local function objectHasCashText(object)
 	return hasCash and hasOffline
 end
 
-local function getWorldPartFromObject(object)
+function getWorldPartFromObject(object)
 	if object:IsA("BasePart") then
 		return object
 	end
@@ -585,7 +585,7 @@ local function getWorldPartFromObject(object)
 	return nil
 end
 
-local function looksLikeCashSpot(object)
+function looksLikeCashSpot(object)
 	if character and object:IsDescendantOf(character) then
 		return false
 	end
@@ -603,7 +603,7 @@ local function looksLikeCashSpot(object)
 	return true
 end
 
-local function findCashOnSide(side)
+function findCashOnSide(side)
 	if not humanoidRootPart then
 		setStatus("Character not ready.")
 		return nil
@@ -662,7 +662,7 @@ local function findCashOnSide(side)
 	end
 end
 
-local function isDirectPathClear(targetPosition)
+function isDirectPathClear(targetPosition)
 	if not humanoidRootPart then
 		return false
 	end
@@ -692,7 +692,7 @@ local function isDirectPathClear(targetPosition)
 	return hitDistance >= targetDistance - 4
 end
 
-local function stopMovement()
+function stopMovement()
 	if humanoid then
 		humanoid:Move(Vector3.zero, false)
 	end
@@ -703,7 +703,7 @@ local function stopMovement()
 	end
 end
 
-local function stopAutoMove()
+function stopAutoMove()
 	currentAutoRun += 1
 	autoMoving = false
 	currentAutoSide = nil
@@ -715,7 +715,7 @@ local function stopAutoMove()
 	updateFloatingButtons()
 end
 
-local function isWaypointBackwards(waypointPosition, targetPosition)
+function isWaypointBackwards(waypointPosition, targetPosition)
 	if not humanoidRootPart then
 		return false
 	end
@@ -732,7 +732,7 @@ local function isWaypointBackwards(waypointPosition, targetPosition)
 	return toWaypoint.Unit:Dot(toTarget.Unit) < -0.2
 end
 
-local function smoothMoveAlongPoints(points, label, runId, timeout)
+function smoothMoveAlongPoints(points, label, runId, timeout)
 	if not humanoid or not humanoidRootPart then
 		return false
 	end
@@ -797,7 +797,7 @@ local function smoothMoveAlongPoints(points, label, runId, timeout)
 	return false
 end
 
-local function pathfindToPosition(targetPosition, label, attempt)
+function pathfindToPosition(targetPosition, label, attempt)
 	attempt = attempt or 1
 	currentAutoRun += 1
 
@@ -906,7 +906,7 @@ local function pathfindToPosition(targetPosition, label, attempt)
 	end)
 end
 
-local function getFixedStopPosition(side, cashPart)
+function getFixedStopPosition(side, cashPart)
 	if not humanoidRootPart then
 		return cashPart.Position
 	end
@@ -936,7 +936,7 @@ local function getFixedStopPosition(side, cashPart)
 	return Vector3.new(stopPosition.X, humanoidRootPart.Position.Y, stopPosition.Z)
 end
 
-local function walkToCash(side)
+function walkToCash(side)
 	if not humanoid or not humanoidRootPart then
 		setStatus("Character not ready.")
 		return false
@@ -958,7 +958,7 @@ local function walkToCash(side)
 	return true
 end
 
-local function toggleAutoMove(side)
+function toggleAutoMove(side)
 	if autoMoving and currentAutoSide == side then
 		stopAutoMove()
 		return
@@ -980,7 +980,7 @@ local function toggleAutoMove(side)
 	end
 end
 
-local function getClosestOtherPlayer()
+function getClosestOtherPlayer()
 	if not humanoidRootPart then
 		return nil
 	end
@@ -1008,7 +1008,7 @@ local function getClosestOtherPlayer()
 	return closestPlayer
 end
 
-local function stopBatAimbot()
+function stopBatAimbot()
 	batAimbotEnabled = false
 	batTargetPlayer = nil
 
@@ -1028,7 +1028,7 @@ local function stopBatAimbot()
 	updateFloatingButtons()
 end
 
-local function startBatAimbot()
+function startBatAimbot()
 	stopAutoMove()
 
 	batTargetPlayer = getClosestOtherPlayer()
@@ -1068,7 +1068,7 @@ local function startBatAimbot()
 	updateFloatingButtons()
 end
 
-local function toggleBatAimbot()
+function toggleBatAimbot()
 	if batAimbotEnabled then
 		stopBatAimbot()
 	else
@@ -1076,7 +1076,7 @@ local function toggleBatAimbot()
 	end
 end
 
-local function updateBatAimbot()
+function updateBatAimbot()
 	if not batAimbotEnabled then
 		return
 	end
@@ -1168,25 +1168,25 @@ local function updateBatAimbot()
 	humanoidRootPart.AssemblyAngularVelocity = Vector3.zero
 end
 
-local function updateJumpAmountText()
+function updateJumpAmountText()
 	if movementJumpAmountLabel and movementJumpAmountLabel.Parent then
 		movementJumpAmountLabel.Text = tostring(selectedDownJump)
 	end
 end
 
-local function setDownJumpAmount(value)
+function setDownJumpAmount(value)
 	selectedDownJump = math.clamp(tonumber(value) or 5, MIN_DOWN_JUMP, MAX_DOWN_JUMP)
 	updateJumpAmountText()
 	setStatus("Downward jump set to jump " .. tostring(selectedDownJump) .. ".")
 end
 
-local function isAirborneState(state)
+function isAirborneState(state)
 	return state == Enum.HumanoidStateType.Freefall
 		or state == Enum.HumanoidStateType.Jumping
 		or state == Enum.HumanoidStateType.FallingDown
 end
 
-local function isGroundedState(state)
+function isGroundedState(state)
 	return state == Enum.HumanoidStateType.Running
 		or state == Enum.HumanoidStateType.RunningNoPhysics
 		or state == Enum.HumanoidStateType.Landed
@@ -1194,7 +1194,7 @@ local function isGroundedState(state)
 		or state == Enum.HumanoidStateType.Seated
 end
 
-local function isAirborne()
+function isAirborne()
 	if not humanoid then
 		return false
 	end
@@ -1203,13 +1203,13 @@ local function isAirborne()
 		or humanoid.FloorMaterial == Enum.Material.Air
 end
 
-local function resetJumpSequence()
+function resetJumpSequence()
 	totalJumpsInSequence = 0
 	jumpDownPressCountV50 = 0
 	airborneSince = nil
 end
 
-local function getHeldTool()
+function getHeldTool()
 	if not character then
 		return nil
 	end
@@ -1217,7 +1217,7 @@ local function getHeldTool()
 	return character:FindFirstChildOfClass("Tool")
 end
 
-local function rememberHeldTool()
+function rememberHeldTool()
 	local tool = getHeldTool()
 
 	if tool then
@@ -1234,7 +1234,7 @@ local function rememberHeldTool()
 	return nil
 end
 
-local function reEquipLastHeldTool()
+function reEquipLastHeldTool()
 	if not lastHeldTool then
 		return
 	end
@@ -1265,7 +1265,7 @@ local function reEquipLastHeldTool()
 	end
 end
 
-local function isProtectedToolName(name)
+function isProtectedToolName(name)
 	name = string.lower(name or "")
 
 	for protectedName in pairs(PROTECTED_TOOL_NAMES) do
@@ -1277,7 +1277,7 @@ local function isProtectedToolName(name)
 	return false
 end
 
-local function protectTool(tool)
+function protectTool(tool)
 	if tool and tool:IsA("Tool") then
 		pcall(function()
 			tool.CanBeDropped = false
@@ -1285,7 +1285,7 @@ local function protectTool(tool)
 	end
 end
 
-local function recoverProtectedTools()
+function recoverProtectedTools()
 	local dropped = 0
 	local backpack = player:FindFirstChild("Backpack")
 
@@ -1365,7 +1365,7 @@ local function recoverProtectedTools()
 	end
 end
 
-local function autoProtectImportantTools()
+function autoProtectImportantTools()
 	local backpack = player:FindFirstChild("Backpack")
 
 	if character then
@@ -1386,7 +1386,7 @@ local function autoProtectImportantTools()
 	end
 end
 
-local function isProtectedHeldName(name)
+function isProtectedHeldName(name)
 	name = string.lower(name or "")
 
 	if string.find(name, "bat") or string.find(name, "medusa") then
@@ -1396,7 +1396,7 @@ local function isProtectedHeldName(name)
 	return false
 end
 
-local function looksLikeDroppableHeldObject(object)
+function looksLikeDroppableHeldObject(object)
 	if not object then
 		return false
 	end
@@ -1424,7 +1424,7 @@ local function looksLikeDroppableHeldObject(object)
 	return false
 end
 
-local function findLocalDropRemotes()
+function findLocalDropRemotes()
 	local remotes = {}
 	local used = {}
 
@@ -1464,7 +1464,7 @@ local function findLocalDropRemotes()
 	return remotes
 end
 
-local function getRootOutsideCharacter(part)
+function getRootOutsideCharacter(part)
 	if not part or not character then
 		return nil
 	end
@@ -1500,7 +1500,7 @@ local HAND_PART_NAMES = {
 	["torso"] = true
 }
 
-local function isHandOrCarryPart(part)
+function isHandOrCarryPart(part)
 	if not part or not part:IsA("BasePart") then
 		return false
 	end
@@ -1508,7 +1508,7 @@ local function isHandOrCarryPart(part)
 	return HAND_PART_NAMES[string.lower(part.Name or "")] == true
 end
 
-local function isSafeCharacterInternalObject(object)
+function isSafeCharacterInternalObject(object)
 	if not character or not object then
 		return false
 	end
@@ -1540,7 +1540,7 @@ local function isSafeCharacterInternalObject(object)
 	return false
 end
 
-local function getDropCandidateFromConnectedPart(part)
+function getDropCandidateFromConnectedPart(part)
 	if not part or not character then
 		return nil
 	end
@@ -1564,7 +1564,7 @@ local function getDropCandidateFromConnectedPart(part)
 	return nil
 end
 
-local function jointConnectsCandidateToCharacter(joint, candidate)
+function jointConnectsCandidateToCharacter(joint, candidate)
 	if not character or not joint or not candidate then
 		return false
 	end
@@ -1594,7 +1594,7 @@ local function jointConnectsCandidateToCharacter(joint, candidate)
 	return false
 end
 
-local function destroyAllJointsBetweenCandidateAndCharacter(candidate)
+function destroyAllJointsBetweenCandidateAndCharacter(candidate)
 	local destroyed = 0
 
 	if not candidate or not character then
@@ -1638,7 +1638,7 @@ local function destroyAllJointsBetweenCandidateAndCharacter(candidate)
 	return destroyed
 end
 
-local function findLocalHeldObjectsForDrop()
+function findLocalHeldObjectsForDrop()
 	local found = {}
 	local used = {}
 
@@ -1749,7 +1749,7 @@ local function findLocalHeldObjectsForDrop()
 	return found
 end
 
-local function detachOneLocalDropObject(object)
+function detachOneLocalDropObject(object)
 	if not object or not object.Parent then
 		return false
 	end
@@ -1832,7 +1832,7 @@ local function detachOneLocalDropObject(object)
 	return destroyedJoints > 0
 end
 
-local function fireSafeDropRemotes(heldObjects)
+function fireSafeDropRemotes(heldObjects)
 	local fired = false
 
 	for _, remote in ipairs(findLocalDropRemotes()) do
@@ -1870,7 +1870,7 @@ local function fireSafeDropRemotes(heldObjects)
 	return fired
 end
 
-local function textMatchesDropKeyword(text)
+function textMatchesDropKeyword(text)
 	text = string.lower(tostring(text or ""))
 
 	for _, keyword in ipairs(DROP_PROMPT_KEYWORDS) do
@@ -1882,7 +1882,7 @@ local function textMatchesDropKeyword(text)
 	return false
 end
 
-local function activateNearbyDropPrompts()
+function activateNearbyDropPrompts()
 	if not humanoidRootPart then
 		return false
 	end
@@ -1940,7 +1940,7 @@ local function activateNearbyDropPrompts()
 	return activated
 end
 
-local function fireLocalDropBindables(heldObjects)
+function fireLocalDropBindables(heldObjects)
 	local fired = false
 	local locations = {
 		player,
@@ -1994,7 +1994,7 @@ local function fireLocalDropBindables(heldObjects)
 	return fired
 end
 
-local function callDropRemoteFunctions(heldObjects)
+function callDropRemoteFunctions(heldObjects)
 	local called = false
 	local locations = {
 		game:GetService("ReplicatedStorage"),
@@ -2041,7 +2041,7 @@ local function callDropRemoteFunctions(heldObjects)
 	return called
 end
 
-local function tryBackpackDropToolOnly()
+function tryBackpackDropToolOnly()
 
 	if not character then
 		return false
@@ -2073,7 +2073,7 @@ local function tryBackpackDropToolOnly()
 	return didDrop
 end
 
-local function getSnapDownCFrameForObject(object)
+function getSnapDownCFrameForObject(object)
 	if not humanoidRootPart then
 		return nil
 	end
@@ -2137,7 +2137,7 @@ local function getSnapDownCFrameForObject(object)
 	return CFrame.new(finalPosition) * CFrame.Angles(0, yaw, 0)
 end
 
-local function zeroDropObjectVelocity(object)
+function zeroDropObjectVelocity(object)
 	if not object then
 		return
 	end
@@ -2168,7 +2168,7 @@ local function zeroDropObjectVelocity(object)
 	end
 end
 
-local function snapDropObjectDown(object)
+function snapDropObjectDown(object)
 	if not object or not object.Parent then
 		return false
 	end
@@ -2215,7 +2215,7 @@ local function snapDropObjectDown(object)
 	return false
 end
 
-local function scheduleFastSnapDown(object)
+function scheduleFastSnapDown(object)
 	task.delay(FLING_DROP_DOWN_DELAY, function()
 		snapDropObjectDown(object)
 	end)
@@ -2229,7 +2229,7 @@ local function scheduleFastSnapDown(object)
 	end)
 end
 
-local function flingOneHeldObjectUp(object)
+function flingOneHeldObjectUp(object)
 	if not object or not object.Parent then
 		return false
 	end
@@ -2298,7 +2298,7 @@ end
 
 local lastDropSafeCFrame = nil
 
-local function enableLocalRespawnSoftener()
+function enableLocalRespawnSoftener()
 	if not humanoid then
 		return
 	end
@@ -2320,7 +2320,7 @@ local function enableLocalRespawnSoftener()
 	end)
 end
 
-local function lateDropRecovery()
+function lateDropRecovery()
 	if not humanoidRootPart or not humanoid or humanoid.Health <= 0 then
 		return
 	end
@@ -2343,11 +2343,11 @@ local function lateDropRecovery()
 	humanoidRootPart.AssemblyAngularVelocity = Vector3.zero
 end
 
-local function getDropV19Mode()
+function getDropV19Mode()
 	return DROP_V19_MODES[DROP_V19_MODE_INDEX] or DROP_V19_MODES[2]
 end
 
-local function cycleDropV19Mode()
+function cycleDropV19Mode()
 	DROP_V19_MODE_INDEX += 1
 
 	if DROP_V19_MODE_INDEX > #DROP_V19_MODES then
@@ -2358,17 +2358,17 @@ local function cycleDropV19Mode()
 	setStatus("DROP mode: " .. mode.Name .. " / " .. tostring(mode.AvatarUp))
 end
 
-local function getDropV19AvatarPower()
+function getDropV19AvatarPower()
 	local mode = getDropV19Mode()
 	return mode.AvatarUp or FLING_DROP_AVATAR_UP_POWER
 end
 
-local function getDropV19RecoveryDelay()
+function getDropV19RecoveryDelay()
 	local mode = getDropV19Mode()
 	return mode.RecoverDelay or DROP_V13_RECOVERY_DELAY
 end
 
-local function flingAvatarUpBriefly()
+function flingAvatarUpBriefly()
 	if not humanoidRootPart or not humanoid or humanoid.Health <= 0 then
 		return
 	end
@@ -2401,7 +2401,7 @@ local function flingAvatarUpBriefly()
 	setStatus("DROP V19 " .. mode.Name .. " tried.")
 end
 
-local function safeAvatarPopForDropV67()
+function safeAvatarPopForDropV67()
 	if not character or not humanoid or not humanoidRootPart or humanoid.Health <= 0 then
 		return false
 	end
@@ -2456,7 +2456,7 @@ local function safeAvatarPopForDropV67()
 	return true
 end
 
-local function safeLocalDropHeld()
+function safeLocalDropHeld()
 
 	local heldObjects = {}
 
@@ -2520,7 +2520,7 @@ local function safeLocalDropHeld()
 	end
 end
 
-local function startToolGuard()
+function startToolGuard()
 	local tool = rememberHeldTool()
 
 	if not tool then
@@ -2537,7 +2537,7 @@ local function startToolGuard()
 	task.delay(0.45, reEquipLastHeldTool)
 end
 
-local function updateToolGuard()
+function updateToolGuard()
 	if os.clock() > toolGuardUntil then
 		return
 	end
@@ -2545,7 +2545,7 @@ local function updateToolGuard()
 	reEquipLastHeldTool()
 end
 
-local function getJumpPreserveFlatVelocity(currentVelocity, multiplier)
+function getJumpPreserveFlatVelocity(currentVelocity, multiplier)
 	multiplier = multiplier or 1
 
 	local speed = getAntiKnockbackSpeed()
@@ -2579,7 +2579,7 @@ local function getJumpPreserveFlatVelocity(currentVelocity, multiplier)
 	return Vector3.new(currentVelocity.X * multiplier, 0, currentVelocity.Z * multiplier)
 end
 
-local function stabilizeCameraAndRoot()
+function stabilizeCameraAndRoot()
 	if not humanoid or not humanoidRootPart or humanoid.Health <= 0 then
 		return
 	end
@@ -2610,7 +2610,7 @@ local function stabilizeCameraAndRoot()
 	humanoidRootPart.AssemblyAngularVelocity = Vector3.zero
 end
 
-local function holdJumpDownForce()
+function holdJumpDownForce()
 	if not humanoidRootPart or not humanoid or humanoid.Health <= 0 then
 		return
 	end
@@ -2638,7 +2638,7 @@ local function holdJumpDownForce()
 	end)
 end
 
-local function isHoldingCarryObjectForJumpDown()
+function isHoldingCarryObjectForJumpDown()
 	if not character then
 		return false
 	end
@@ -2668,7 +2668,7 @@ local function isHoldingCarryObjectForJumpDown()
 	return false
 end
 
-local function protectCarryJumpMoment()
+function protectCarryJumpMoment()
 	if humanoid then
 		pcall(function()
 			humanoid.Sit = false
@@ -2682,7 +2682,7 @@ local function protectCarryJumpMoment()
 	end
 end
 
-local function performAirJump()
+function performAirJump()
 	if not humanoidRootPart or not humanoid or humanoid.Health <= 0 then
 		return
 	end
@@ -2722,7 +2722,7 @@ local function performAirJump()
 	end
 end
 
-local function startCarrySafeDownProtection()
+function startCarrySafeDownProtection()
 
 	local untilTime = os.clock() + CARRY_SAFE_DOWNWARD_TIME
 
@@ -2753,7 +2753,7 @@ local function startCarrySafeDownProtection()
 	end)
 end
 
-local function sendPlayerDown()
+function sendPlayerDown()
 	if not humanoidRootPart or not humanoid or humanoid.Health <= 0 then
 		return
 	end
@@ -2805,7 +2805,7 @@ local function sendPlayerDown()
 	end
 end
 
-local function handleJumpAbility()
+function handleJumpAbility()
 
 	if not getHeldTool() then
 		lastHeldTool = nil
@@ -2851,7 +2851,7 @@ local function handleJumpAbility()
 	setStatus("V50 Jump " .. tostring(jumpDownPressCountV50) .. "/" .. tostring(targetJump) .. ".")
 end
 
-local function getCameraFlatDirections()
+function getCameraFlatDirections()
 	local camera = workspace.CurrentCamera
 
 	if not camera then
@@ -2875,7 +2875,7 @@ local function getCameraFlatDirections()
 	return forward, right
 end
 
-local function updateMobileMoveDirection()
+function updateMobileMoveDirection()
 	if not touchStartPosition or not touchCurrentPosition then
 		mobileMoveDirection = Vector3.zero
 		return
@@ -2908,7 +2908,7 @@ local function updateMobileMoveDirection()
 	end
 end
 
-local function getKeyboardMoveDirection()
+function getKeyboardMoveDirection()
 	local mobileDirection = mobileMoveDirection
 
 	if mobileDirection.Magnitude > 0.05 then
@@ -2941,7 +2941,7 @@ local function getKeyboardMoveDirection()
 	return Vector3.zero
 end
 
-local function setupMobileTouchMovement()
+function setupMobileTouchMovement()
 	UserInputService.TouchStarted:Connect(function(input)
 		if activeMoveTouch then
 			return
@@ -2982,7 +2982,7 @@ local function setupMobileTouchMovement()
 	end)
 end
 
-local function rememberMoveDirection()
+function rememberMoveDirection()
 	if not humanoid then
 		return
 	end
@@ -3002,7 +3002,7 @@ local function rememberMoveDirection()
 	end
 end
 
-local function keepGuiButtonsAlive()
+function keepGuiButtonsAlive()
 	pcall(function()
 		if screenGui then
 			screenGui.Enabled = true
@@ -3028,7 +3028,7 @@ if mainFrame then
 	end)
 end
 
-local function disconnectAntiRagdollConnections()
+function disconnectAntiRagdollConnections()
 	for _, connection in ipairs(antiRagdollConnections) do
 		if connection then
 			connection:Disconnect()
@@ -3043,7 +3043,7 @@ local function disconnectAntiRagdollConnections()
 	end
 end
 
-local function setHumanoidStateEnabledSafe(state, enabled)
+function setHumanoidStateEnabledSafe(state, enabled)
 	if not humanoid then
 		return
 	end
@@ -3053,7 +3053,7 @@ local function setHumanoidStateEnabledSafe(state, enabled)
 	end)
 end
 
-local function isRagdollObject(object)
+function isRagdollObject(object)
 	local name = string.lower(object.Name)
 
 	if string.find(name, "ragdoll")
@@ -3069,7 +3069,7 @@ local function isRagdollObject(object)
 		or object:IsA("SpringConstraint")
 end
 
-local function startAntiKnockbackWindow()
+function startAntiKnockbackWindow()
 
 	lastMoveDirection = Vector3.zero
 
@@ -3080,7 +3080,7 @@ local function startAntiKnockbackWindow()
 	manualMoveUntil = 0
 end
 
-local function getAntiKnockbackSpeed()
+function getAntiKnockbackSpeed()
 	if autoMoving then
 		return getAutoSpeed()
 	end
@@ -3092,7 +3092,7 @@ local function getAntiKnockbackSpeed()
 	return clampSpeed(getTargetSpeed())
 end
 
-local function getWantedFlatVelocity()
+function getWantedFlatVelocity()
 	if not humanoid then
 		return Vector3.zero
 	end
@@ -3115,7 +3115,7 @@ local function getWantedFlatVelocity()
 	return Vector3.zero
 end
 
-local function cancelKnockback()
+function cancelKnockback()
 	if not humanoidRootPart or not humanoid then
 		return
 	end
@@ -3141,24 +3141,24 @@ local function cancelKnockback()
 	humanoid:Move(Vector3.zero, false)
 end
 
-local function markJumpDownSequenceGrace()
+function markJumpDownSequenceGrace()
 	jumpDownSequenceGraceUntil = os.clock() + 1.35
 	antiRagdollJumpGraceUntil = math.max(antiRagdollJumpGraceUntil, jumpDownSequenceGraceUntil)
 end
 
-local function isJumpDownSequenceGraceActive()
+function isJumpDownSequenceGraceActive()
 	return os.clock() < jumpDownSequenceGraceUntil
 end
 
-local function markAntiRagdollJumpGrace()
+function markAntiRagdollJumpGrace()
 	antiRagdollJumpGraceUntil = math.max(antiRagdollJumpGraceUntil, os.clock() + ANTI_RAGDOLL_JUMP_GRACE_TIME)
 end
 
-local function isAntiRagdollJumpGraceActive()
+function isAntiRagdollJumpGraceActive()
 	return os.clock() < antiRagdollJumpGraceUntil
 end
 
-local function isRealRagdollState()
+function isRealRagdollState()
 	if not humanoid then
 		return false
 	end
@@ -3171,12 +3171,12 @@ local function isRealRagdollState()
 		or state == Enum.HumanoidStateType.Physics
 end
 
-local function forceManualMovementDropy()
+function forceManualMovementDropy()
 
 	return
 end
 
-local function shouldCancelKnockback()
+function shouldCancelKnockback()
 	if not humanoidRootPart or not humanoid then
 		return false
 	end
@@ -3220,7 +3220,7 @@ local function shouldCancelKnockback()
 	return false
 end
 
-local function repairCharacterJointsLight()
+function repairCharacterJointsLight()
 	if not character then
 		return
 	end
@@ -3240,7 +3240,7 @@ local function repairCharacterJointsLight()
 	end
 end
 
-local function forceFastGetUp()
+function forceFastGetUp()
 	if not humanoid or humanoid.Health <= 0 then
 		return
 	end
@@ -3289,7 +3289,7 @@ local function forceFastGetUp()
 	end
 end
 
-local function forceAntiRagdollMovementAssist()
+function forceAntiRagdollMovementAssist()
 	if not antiRagdollEnabled then
 		return
 	end
@@ -3354,7 +3354,7 @@ local function forceAntiRagdollMovementAssist()
 	end
 end
 
-local function applyAntiRagdollState()
+function applyAntiRagdollState()
 	if not humanoid or humanoid.Health <= 0 then
 		return
 	end
@@ -3387,7 +3387,7 @@ local function applyAntiRagdollState()
 	end
 end
 
-local function startAntiRagdollWatcher()
+function startAntiRagdollWatcher()
 	disconnectAntiRagdollConnections()
 
 	if not character or not humanoid then
@@ -3441,7 +3441,7 @@ local function startAntiRagdollWatcher()
 	applyAntiRagdollState()
 end
 
-local function updateAntiRagdoll()
+function updateAntiRagdoll()
 	if not antiRagdollEnabled then
 		return
 	end
@@ -3449,7 +3449,7 @@ local function updateAntiRagdoll()
 	applyAntiRagdollState()
 end
 
-local function makePanelDraggable(handle, frame)
+function makePanelDraggable(handle, frame)
 	local dragging = false
 	local dragStart
 	local startPos
@@ -3497,7 +3497,7 @@ local function makePanelDraggable(handle, frame)
 	end)
 end
 
-local function makeButton(parent, text, height, callback)
+function makeButton(parent, text, height, callback)
 	local button = Instance.new("TextButton")
 	local buttonHeight = math.min(height or 32, 34)
 
@@ -3523,7 +3523,7 @@ local function makeButton(parent, text, height, callback)
 	return button
 end
 
-local function makeActionButton(parent, text, height, callback)
+function makeActionButton(parent, text, height, callback)
 	local button = Instance.new("TextButton")
 	local buttonHeight = math.min(height or 32, 34)
 
@@ -3556,7 +3556,7 @@ local function makeActionButton(parent, text, height, callback)
 	return button
 end
 
-local function makeInfo(parent, text)
+function makeInfo(parent, text)
 	local label = Instance.new("TextLabel")
 	label.Size = UDim2.new(1, 0, 0, 22)
 	label.BackgroundTransparency = 1
@@ -3569,7 +3569,7 @@ local function makeInfo(parent, text)
 	return label
 end
 
-local function makeToggle(parent, text, getState, callback)
+function makeToggle(parent, text, getState, callback)
 	local button
 
 	local function refresh()
@@ -3590,7 +3590,7 @@ local function makeToggle(parent, text, getState, callback)
 	return button
 end
 
-local function makeSpeedAdjuster(parent, labelText, startValue, callback)
+function makeSpeedAdjuster(parent, labelText, startValue, callback)
 	local holder = Instance.new("Frame")
 	holder.Size = UDim2.new(1, 0, 0, 38)
 	holder.BackgroundTransparency = 1
@@ -3639,7 +3639,7 @@ local function makeSpeedAdjuster(parent, labelText, startValue, callback)
 	updateValue(currentValue)
 end
 
-local function clearContent(contentArea, listLayout)
+function clearContent(contentArea, listLayout)
 	for _, child in ipairs(contentArea:GetChildren()) do
 		if child ~= listLayout then
 			child:Destroy()
@@ -3647,7 +3647,7 @@ local function clearContent(contentArea, listLayout)
 	end
 end
 
-local function updateSelected(sectionName)
+function updateSelected(sectionName)
 	for name, button in pairs(sectionButtons) do
 		if name == sectionName then
 			button.BackgroundColor3 = SELECTED_COLOR
@@ -3657,7 +3657,7 @@ local function updateSelected(sectionName)
 	end
 end
 
-local function createOrUpdateOverheadText()
+function createOrUpdateOverheadText()
 	if not character then
 		return
 	end
@@ -3695,7 +3695,7 @@ local function createOrUpdateOverheadText()
 	label.Parent = overheadBillboard
 end
 
-local function setupCharacter(char)
+function setupCharacter(char)
 	character = char
 	humanoid = character:WaitForChild("Humanoid", 10)
 	humanoidRootPart = character:WaitForChild("HumanoidRootPart", 10)
@@ -3752,7 +3752,7 @@ local function setupCharacter(char)
 	setStatus("Character loaded.")
 end
 
-local function forceAddVisibleDropOnlyButton()
+function forceAddVisibleDropOnlyButton()
 
 	if floatingButtons.DropTools then
 		floatingButtons.DropTools.Text = "DROP"
@@ -3763,7 +3763,7 @@ local function forceAddVisibleDropOnlyButton()
 	end
 end
 
-local function createGui()
+function createGui()
 	for _, oldGui in ipairs(playerGui:GetChildren()) do
 		if oldGui:IsA("ScreenGui") then
 			local oldName = string.lower(oldGui.Name or "")
