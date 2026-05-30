@@ -4459,17 +4459,35 @@ end)
 		button.Name = name
 		button.Size = UDim2.new(0, 74, 0, 74)
 		button.Position = position
-		button.BackgroundColor3 = BUTTON_BLACK
+		button.BackgroundColor3 = Color3.fromRGB(74, 74, 78)
 		button.TextColor3 = Color3.fromRGB(255, 255, 255)
 		button.TextSize = 13
 		button.Font = Enum.Font.GothamBold
 		button.TextWrapped = true
 		button.BorderSizePixel = 0
-		button.AutoButtonColor = true
+		button.AutoButtonColor = false
 		button.Parent = floatingButtonGroup or screenGui
-		button.ZIndex = 51
+		button.ZIndex = 53
 
-		addCorner(button, 10)
+		addCorner(button, 14)
+
+		local gradient = Instance.new("UIGradient")
+		gradient.Name = "MainGradient"
+		gradient.Rotation = 90
+		gradient.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(108, 108, 114)),
+			ColorSequenceKeypoint.new(0.18, Color3.fromRGB(92, 92, 98)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(46, 46, 50))
+		})
+		gradient.Parent = button
+
+		local stroke = Instance.new("UIStroke")
+		stroke.Name = "ButtonStroke"
+		stroke.Color = Color3.fromRGB(12, 12, 14)
+		stroke.Thickness = 2
+		stroke.Transparency = 0.15
+		stroke.Parent = button
+
 		makeFloatingButtonDraggable(button)
 
 		button.MouseButton1Click:Connect(function()
@@ -4481,70 +4499,164 @@ end)
 		return button
 	end
 
+	local function styleFloatingButton(button, active)
+		if not button then
+			return
+		end
+
+		local gradient = button:FindFirstChild("MainGradient")
+		local stroke = button:FindFirstChild("ButtonStroke")
+
+		if active then
+			button.BackgroundColor3 = Color3.fromRGB(18, 48, 110)
+			if gradient then
+				gradient.Color = ColorSequence.new({
+					ColorSequenceKeypoint.new(0, Color3.fromRGB(42, 96, 182)),
+					ColorSequenceKeypoint.new(0.28, Color3.fromRGB(30, 74, 155)),
+					ColorSequenceKeypoint.new(1, Color3.fromRGB(8, 24, 72))
+				})
+			end
+			if stroke then
+				stroke.Color = Color3.fromRGB(0, 170, 255)
+				stroke.Transparency = 0
+			end
+		else
+			button.BackgroundColor3 = Color3.fromRGB(74, 74, 78)
+			if gradient then
+				gradient.Color = ColorSequence.new({
+					ColorSequenceKeypoint.new(0, Color3.fromRGB(108, 108, 114)),
+					ColorSequenceKeypoint.new(0.18, Color3.fromRGB(92, 92, 98)),
+					ColorSequenceKeypoint.new(1, Color3.fromRGB(46, 46, 50))
+				})
+			end
+			if stroke then
+				stroke.Color = Color3.fromRGB(12, 12, 14)
+				stroke.Transparency = 0.15
+			end
+		end
+	end
+
 	updateFloatingButtons = function()
+		if floatingButtons.DropTools then
+			floatingButtons.DropTools.Text = "DROP\nBR"
+			styleFloatingButton(floatingButtons.DropTools, false)
+		end
+
 		if floatingButtons.AutoLeft then
 			floatingButtons.AutoLeft.Text = autoMoving and currentAutoSide == "Left" and "STOP\nLEFT" or "AUTO\nLEFT"
+			styleFloatingButton(floatingButtons.AutoLeft, autoMoving and currentAutoSide == "Left")
+		end
+
+		if floatingButtons.Bat then
+			floatingButtons.Bat.Text = "AUTO\nBAT"
+			styleFloatingButton(floatingButtons.Bat, batAimbotEnabled)
 		end
 
 		if floatingButtons.AutoRight then
 			floatingButtons.AutoRight.Text = autoMoving and currentAutoSide == "Right" and "STOP\nRIGHT" or "AUTO\nRIGHT"
-		end
-
-		if floatingButtons.Carry then
-			floatingButtons.Carry.Text = speedMode == "Carry" and "CARRY\nSPEED\nON" or "CARRY\nSPEED\nOFF"
-		end
-
-		if floatingButtons.Bat then
-			floatingButtons.Bat.Text = batAimbotEnabled and "BAT\nAIM\nON" or "BAT\nAIM\nOFF"
-		end
-
-		if floatingButtons.DropTools then
-			floatingButtons.DropTools.Text = "DROP"
-		end
-
-		if floatingButtons.LaggerCarry then
-			floatingButtons.LaggerCarry.Text = speedMode == "Lagger Carry" and "LAGGER\nCARRY\nON" or "LAGGER\nCARRY\nOFF"
+			styleFloatingButton(floatingButtons.AutoRight, autoMoving and currentAutoSide == "Right")
 		end
 
 		if floatingButtons.TPDown then
 			floatingButtons.TPDown.Text = "TP\nDOWN"
+			styleFloatingButton(floatingButtons.TPDown, autoTpDownEnabled)
+		end
+
+		if floatingButtons.CarrySpeed then
+			floatingButtons.CarrySpeed.Text = "CARRY\nSPEED"
+			styleFloatingButton(floatingButtons.CarrySpeed, false)
+		end
+
+		if floatingButtons.CarryMode then
+			floatingButtons.CarryMode.Text = "CARRY\nMODE"
+			styleFloatingButton(floatingButtons.CarryMode, speedMode == "Carry")
 		end
 
 		if floatingButtons.Lagger then
-			floatingButtons.Lagger.Text = speedMode == "Lagger" and "LAGGER\nMODE\nON" or "LAGGER\nMODE\nOFF"
+			floatingButtons.Lagger.Text = "LAGGER\nMODE"
+			styleFloatingButton(floatingButtons.Lagger, speedMode == "Lagger")
 		end
 	end
 
 	floatingButtonGroup = Instance.new("Frame")
-	floatingButtonGroup.Name = "MJ4PFloatingButtonGroup"
-	floatingButtonGroup.Size = UDim2.new(0, 158, 0, 326)
+	floatingButtonGroup.Name = "DQuickControlPanel"
+	floatingButtonGroup.Size = UDim2.new(0, 182, 0, 350)
 	floatingButtonGroup.Position = UDim2.new(0, 16, 0, 105)
-	floatingButtonGroup.BackgroundTransparency = 1
+	floatingButtonGroup.BackgroundColor3 = Color3.fromRGB(5, 5, 8)
 	floatingButtonGroup.BorderSizePixel = 0
 	floatingButtonGroup.Active = false
 	floatingButtonGroup.Parent = screenGui
 	floatingButtonGroup.ZIndex = 50
+	addCorner(floatingButtonGroup, 16)
 
-	local leftX = 0
-	local rightX = 84
-	local topY = 0
-	local gapY = 84
+	local panelStroke = Instance.new("UIStroke")
+	panelStroke.Color = Color3.fromRGB(0, 120, 255)
+	panelStroke.Thickness = 2
+	panelStroke.Transparency = 0.08
+	panelStroke.Parent = floatingButtonGroup
 
-	floatingButtons.Bat = createSquareButton("BatAimbotSquareButton", UDim2.new(0, leftX, 0, topY + gapY), function()
-		toggleBatAimbot()
-	end)
+	local innerPanel = Instance.new("Frame")
+	innerPanel.Name = "InnerPanel"
+	innerPanel.Size = UDim2.new(1, -12, 1, -12)
+	innerPanel.Position = UDim2.new(0, 6, 0, 6)
+	innerPanel.BackgroundColor3 = Color3.fromRGB(10, 10, 14)
+	innerPanel.BorderSizePixel = 0
+	innerPanel.Parent = floatingButtonGroup
+	innerPanel.ZIndex = 50
+	addCorner(innerPanel, 14)
 
-	floatingButtons.AutoRight = createSquareButton("AutoRightSquareButton", UDim2.new(0, rightX, 0, topY), function()
-		toggleAutoMove("Right")
-	end)
+	local dBar = Instance.new("Frame")
+	dBar.Name = "DBar"
+	dBar.Size = UDim2.new(0, 32, 1, -24)
+	dBar.Position = UDim2.new(0, 10, 0, 12)
+	dBar.BackgroundColor3 = Color3.fromRGB(0, 54, 160)
+	dBar.BackgroundTransparency = 0.52
+	dBar.BorderSizePixel = 0
+	dBar.Parent = innerPanel
+	dBar.ZIndex = 51
+	addCorner(dBar, 12)
+
+	local dCurve = Instance.new("Frame")
+	dCurve.Name = "DCurve"
+	dCurve.Size = UDim2.new(0, 126, 1, -24)
+	dCurve.Position = UDim2.new(1, -136, 0, 12)
+	dCurve.BackgroundColor3 = Color3.fromRGB(0, 54, 160)
+	dCurve.BackgroundTransparency = 0.64
+	dCurve.BorderSizePixel = 0
+	dCurve.Parent = innerPanel
+	dCurve.ZIndex = 51
+	addCorner(dCurve, 60)
+
+	local dCut = Instance.new("Frame")
+	dCut.Name = "DCut"
+	dCut.Size = UDim2.new(0, 52, 1, -52)
+	dCut.Position = UDim2.new(0, 48, 0, 26)
+	dCut.BackgroundColor3 = Color3.fromRGB(10, 10, 14)
+	dCut.BorderSizePixel = 0
+	dCut.Parent = innerPanel
+	dCut.ZIndex = 51
+	addCorner(dCut, 20)
+
+	local leftX = 12
+	local rightX = 96
+	local topY = 14
+	local gapY = 82
 
 	floatingButtons.DropTools = createSquareButton("DropSquareButton", UDim2.new(0, leftX, 0, topY), function()
 		safeLocalDropHeld()
 		updateFloatingButtons()
 	end)
 
-	floatingButtons.AutoLeft = createSquareButton("AutoLeftSquareButton", UDim2.new(0, rightX, 0, topY + gapY), function()
+	floatingButtons.AutoLeft = createSquareButton("AutoLeftSquareButton", UDim2.new(0, rightX, 0, topY), function()
 		toggleAutoMove("Left")
+	end)
+
+	floatingButtons.Bat = createSquareButton("BatAimbotSquareButton", UDim2.new(0, leftX, 0, topY + gapY), function()
+		toggleBatAimbot()
+	end)
+
+	floatingButtons.AutoRight = createSquareButton("AutoRightSquareButton", UDim2.new(0, rightX, 0, topY + gapY), function()
+		toggleAutoMove("Right")
 	end)
 
 	floatingButtons.TPDown = createSquareButton("TPDownSquareButton", UDim2.new(0, leftX, 0, topY + gapY * 2), function()
@@ -4552,20 +4664,11 @@ end)
 		updateFloatingButtons()
 	end)
 
-	floatingButtons.Lagger = createSquareButton("LaggerModeSquareButton", UDim2.new(0, leftX, 0, topY + gapY * 3), function()
-		if speedMode == "Lagger" then
-			speedMode = "Safe"
-			setStatus("Speed mode: Safe")
-		else
-			speedMode = "Lagger"
-			setStatus("Speed mode: Lagger")
-		end
-
-		applySpeed()
-		updateFloatingButtons()
+	floatingButtons.CarrySpeed = createSquareButton("CarrySpeedSquareButton", UDim2.new(0, rightX, 0, topY + gapY * 2), function()
+		openSection("Speed")
 	end)
 
-	floatingButtons.Carry = createSquareButton("CarrySpeedSquareButton", UDim2.new(0, rightX, 0, topY + gapY * 2), function()
+	floatingButtons.CarryMode = createSquareButton("CarryModeSquareButton", UDim2.new(0, leftX, 0, topY + gapY * 3), function()
 		if speedMode == "Carry" then
 			speedMode = "Safe"
 			setStatus("Speed mode: Safe")
@@ -4578,13 +4681,13 @@ end)
 		updateFloatingButtons()
 	end)
 
-	floatingButtons.LaggerCarry = createSquareButton("LaggerCarryModeSquareButton", UDim2.new(0, rightX, 0, topY + gapY * 3), function()
-		if speedMode == "Lagger Carry" then
+	floatingButtons.Lagger = createSquareButton("LaggerModeSquareButton", UDim2.new(0, rightX, 0, topY + gapY * 3), function()
+		if speedMode == "Lagger" then
 			speedMode = "Safe"
 			setStatus("Speed mode: Safe")
 		else
-			speedMode = "Lagger Carry"
-			setStatus("Speed mode: Lagger Carry")
+			speedMode = "Lagger"
+			setStatus("Speed mode: Lagger")
 		end
 
 		applySpeed()
