@@ -1,4 +1,4 @@
-__DIZZY_UPLOAD_VERSION = "SURGICAL_FIX_DROP_RESPAWN_BAT_SINGLE"
+__DIZZY_UPLOAD_VERSION = "FIX_AR_DROP_NOBATPULL_KEEP_BATCOUNTER"
 __DIZZY_JUMP_CACHE = __DIZZY_JUMP_CACHE or {UntilTime = 0, Result = false, LastStatusTime = 0, LastDeepScanTime = 0}
 __DIZZY_DROP_SUPPRESS_TOOL_UNTIL = __DIZZY_DROP_SUPPRESS_TOOL_UNTIL or 0
 local Players = game:GetService("Players")
@@ -76,8 +76,8 @@ local CHILLI_MOVE_ASSIST_AFTER_HIT_TIME = 1.35
 local CHILLI_MOVE_ASSIST_MIN_SPEED = 5
 
 local antiKnockbackUntil = 0
-local ANTI_KNOCKBACK_RECOVERY_TIME = 0.55
-local ANTI_KNOCKBACK_EXTRA_SPEED = 8
+local ANTI_KNOCKBACK_RECOVERY_TIME = 0.28
+local ANTI_KNOCKBACK_EXTRA_SPEED = 14
 local ANTI_KNOCKBACK_MAX_FALL_SPEED = -95
 local ANTI_KNOCKBACK_MAX_UP_SPEED = 16
 
@@ -86,7 +86,7 @@ local keepMovingUntil = 0
 local KEEP_MOVING_AFTER_HIT_TIME = 0
 
 local lastKnockbackDetectTime = 0
-local KNOCKBACK_DETECT_COOLDOWN = 0.04
+local KNOCKBACK_DETECT_COOLDOWN = 0.09
 
 local manualMoveUntil = 0
 local MANUAL_MOVE_AFTER_HIT_TIME = 0
@@ -2490,13 +2490,32 @@ end
 local function safeLocalDropHeld()
 	local now = os.clock()
 
-	__DIZZY_DROP_SUPPRESS_TOOL_UNTIL = now + 2.5
+	__DIZZY_DROP_SUPPRESS_TOOL_UNTIL = now + 3.5
 	toolGuardUntil = 0
 	lastHeldTool = nil
 
 	pcall(function()
 		if humanoid then
 			humanoid:UnequipTools()
+		end
+	end)
+
+	task.spawn(function()
+		local suppressUntil = os.clock() + 1.15
+
+		while os.clock() < suppressUntil do
+			toolGuardUntil = 0
+			lastHeldTool = nil
+
+			local currentTool = getHeldTool()
+
+			if currentTool and isProtectedHeldName(currentTool.Name) and humanoid then
+				pcall(function()
+					humanoid:UnequipTools()
+				end)
+			end
+
+			RunService.Heartbeat:Wait()
 		end
 	end)
 
@@ -2547,12 +2566,34 @@ local function safeLocalDropHeld()
 
 	__DIZZY_DROP_LIGHT_HELPER_LOCK_UNTIL = now + 1.4
 
-	task.delay(0.08, function()
+	task.delay(0.025, function()
+		local heldObjects = {}
+
+		pcall(function()
+			heldObjects = findLocalHeldObjectsForDrop() or {}
+		end)
+
+		for _, object in ipairs(heldObjects) do
+			if object and object.Parent and not isProtectedHeldName(object.Name) then
+				pcall(function()
+					detachOneLocalDropObject(object)
+				end)
+
+				pcall(function()
+					flingOneHeldObjectUp(object)
+				end)
+
+				pcall(function()
+					scheduleFastSnapDown(object)
+				end)
+			end
+		end
+
+		RunService.Heartbeat:Wait()
+
 		pcall(function()
 			tryBackpackDropToolOnly()
 		end)
-
-		RunService.Heartbeat:Wait()
 
 		if character then
 			for _, child in ipairs(character:GetChildren()) do
@@ -3173,14 +3214,11 @@ local function isRagdollObject(object)
 end
 
 local function startAntiKnockbackWindow()
-
-	lastMoveDirection = Vector3.zero
-
 	local now = os.clock()
 
 	antiKnockbackUntil = math.max(antiKnockbackUntil, now + ANTI_KNOCKBACK_RECOVERY_TIME)
-	keepMovingUntil = 0
-	manualMoveUntil = 0
+	keepMovingUntil = now + 0.18
+	manualMoveUntil = now + 0.18
 end
 
 local function getAntiKnockbackSpeed()
@@ -3241,7 +3279,9 @@ local function cancelKnockback()
 	humanoid.Sit = false
 	humanoid.AutoRotate = true
 
-	humanoid:Move(Vector3.zero, false)
+	if wantedFlat.Magnitude > 0.05 then
+		humanoid:Move(Vector3.new(wantedFlat.X, 0, wantedFlat.Z).Unit, false)
+	end
 end
 
 local function markJumpDownSequenceGrace()
@@ -3332,11 +3372,7 @@ local function repairCharacterJointsLight()
 		if object:IsA("Motor6D") then
 			object.Enabled = true
 		elseif isRagdollObject(object) then
-			if object:IsA("Constraint") then
-				pcall(function()
-					object:Destroy()
-				end)
-			end
+			
 		elseif object:IsA("BasePart") then
 			object.Anchored = false
 		end
@@ -3522,12 +3558,6 @@ local function startAntiRagdollWatcher()
 				object.Enabled = true
 			elseif isRagdollObject(object) then
 				startAntiKnockbackWindow()
-
-				if object:IsA("Constraint") then
-					pcall(function()
-						object:Destroy()
-					end)
-				end
 			elseif object:IsA("BasePart") then
 				object.Anchored = false
 			end
@@ -3828,6 +3858,18 @@ local function setupCharacter(char)
 	if character then
 		character.ChildAdded:Connect(function(child)
 			if child:IsA("Tool") then
+				if __DIZZY_DROP_SUPPRESS_TOOL_UNTIL and os.clock() < __DIZZY_DROP_SUPPRESS_TOOL_UNTIL and isProtectedHeldName(child.Name) then
+					lastHeldTool = nil
+
+					pcall(function()
+						if humanoid then
+							humanoid:UnequipTools()
+						end
+					end)
+
+					return
+				end
+
 				lastHeldTool = child
 
 				pcall(function()
