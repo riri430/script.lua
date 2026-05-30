@@ -1,4 +1,4 @@
-__DIZZY_UPLOAD_VERSION = "FIX_AR_MOVE_AFTER_HIT_KEEP_DROP_BAT"
+__DIZZY_UPLOAD_VERSION = "LOADFIX_AR_MOVE_MINIMAL_FROM_BETTER_VERSION"
 __DIZZY_JUMP_CACHE = __DIZZY_JUMP_CACHE or {UntilTime = 0, Result = false, LastStatusTime = 0, LastDeepScanTime = 0}
 __DIZZY_DROP_SUPPRESS_TOOL_UNTIL = __DIZZY_DROP_SUPPRESS_TOOL_UNTIL or 0
 local Players = game:GetService("Players")
@@ -76,7 +76,7 @@ local CHILLI_MOVE_ASSIST_AFTER_HIT_TIME = 1.35
 local CHILLI_MOVE_ASSIST_MIN_SPEED = 5
 
 local antiKnockbackUntil = 0
-local ANTI_KNOCKBACK_RECOVERY_TIME = 0.16
+local ANTI_KNOCKBACK_RECOVERY_TIME = 0.18
 local ANTI_KNOCKBACK_EXTRA_SPEED = 14
 local ANTI_KNOCKBACK_MAX_FALL_SPEED = -95
 local ANTI_KNOCKBACK_MAX_UP_SPEED = 16
@@ -3221,8 +3221,8 @@ local function startAntiKnockbackWindow()
 	local now = os.clock()
 
 	antiKnockbackUntil = math.max(antiKnockbackUntil, now + ANTI_KNOCKBACK_RECOVERY_TIME)
-	keepMovingUntil = now + 0.42
-	manualMoveUntil = now + 0.42
+	keepMovingUntil = now + 0.18
+	manualMoveUntil = now + 0.18
 end
 
 local function getAntiKnockbackSpeed()
@@ -3412,33 +3412,21 @@ local function forceFastGetUp()
 
 	if currentState == Enum.HumanoidStateType.Ragdoll
 		or currentState == Enum.HumanoidStateType.FallingDown
-		or currentState == Enum.HumanoidStateType.PlatformStanding
-		or currentState == Enum.HumanoidStateType.Physics then
+		or currentState == Enum.HumanoidStateType.PlatformStanding then
 
 		startAntiKnockbackWindow()
 
-		if os.clock() - lastManualMoveStateFix > MANUAL_MOVE_STATE_COOLDOWN then
-			lastManualMoveStateFix = os.clock()
+		pcall(function()
+			humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+		end)
 
-			pcall(function()
-				humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
-			end)
-
-			task.defer(function()
-				if humanoid and humanoid.Health > 0 then
-					pcall(function()
-						humanoid.PlatformStand = false
-						humanoid.Sit = false
-						humanoid.AutoRotate = true
-						if humanoid.FloorMaterial ~= Enum.Material.Air then
-							humanoid:ChangeState(Enum.HumanoidStateType.Running)
-						else
-							humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
-						end
-					end)
-				end
-			end)
-		end
+		pcall(function()
+			if humanoid.FloorMaterial ~= Enum.Material.Air then
+				humanoid:ChangeState(Enum.HumanoidStateType.Running)
+			else
+				humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
+			end
+		end)
 	end
 
 	if autoMoving then
@@ -3540,6 +3528,7 @@ local function applyAntiRagdollState()
 
 		if shouldCancelKnockback() then
 			cancelKnockback()
+			forceAntiRagdollMovementAssist()
 		end
 	else
 		setHumanoidStateEnabledSafe(Enum.HumanoidStateType.Ragdoll, true)
@@ -4647,7 +4636,6 @@ RunService.RenderStepped:Connect(function()
 		autoProtectImportantTools()
 		updateToolGuard()
 		updateAntiRagdoll()
-		forceAntiRagdollMovementAssist()
 		forceLocalSpeed()
 		updateAutoTpDown()
 		forceManualMovementDropy()
