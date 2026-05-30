@@ -1,4 +1,4 @@
-__DIZZY_UPLOAD_VERSION = "ENVY_AR_V6_GUI_STAY_FIX"
+__DIZZY_UPLOAD_VERSION = "DPANEL_BLEND_BLUE_ACTIVE_V2"
 __DIZZY_JUMP_CACHE = __DIZZY_JUMP_CACHE or {UntilTime = 0, Result = false, LastStatusTime = 0, LastDeepScanTime = 0}
 __DIZZY_DROP_SUPPRESS_TOOL_UNTIL = __DIZZY_DROP_SUPPRESS_TOOL_UNTIL or 0
 local Players = game:GetService("Players")
@@ -3708,7 +3708,7 @@ local function makeButton(parent, text, height, callback)
 	button.Size = UDim2.new(1, 0, 0, buttonHeight)
 	button.BackgroundColor3 = BUTTON_BLACK
 	button.Text = text
-	button.TextColor3 = Color3.fromRGB(255, 255, 255)
+	button.TextColor3 = Color3.fromRGB(240, 240, 245)
 	button.TextSize = 13
 	button.Font = Enum.Font.GothamBold
 	button.TextWrapped = true
@@ -3734,7 +3734,7 @@ local function makeActionButton(parent, text, height, callback)
 	button.Size = UDim2.new(1, 0, 0, buttonHeight)
 	button.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
 	button.Text = text
-	button.TextColor3 = Color3.fromRGB(255, 255, 255)
+	button.TextColor3 = Color3.fromRGB(240, 240, 245)
 	button.TextSize = 13
 	button.Font = Enum.Font.GothamBold
 	button.TextWrapped = true
@@ -4381,7 +4381,7 @@ end)
 		button.Position = UDim2.new(0, 8, 0, 8 + ((order - 1) * 50))
 		button.BackgroundColor3 = BUTTON_BLACK
 		button.Text = text
-		button.TextColor3 = Color3.fromRGB(255, 255, 255)
+		button.TextColor3 = Color3.fromRGB(240, 240, 245)
 		button.TextSize = 15
 		button.Font = Enum.Font.GothamBold
 		button.BorderSizePixel = 0
@@ -4459,34 +4459,42 @@ end)
 		button.Name = name
 		button.Size = UDim2.new(0, 74, 0, 74)
 		button.Position = position
-		button.BackgroundColor3 = Color3.fromRGB(74, 74, 78)
-		button.TextColor3 = Color3.fromRGB(255, 255, 255)
+		button.BackgroundColor3 = Color3.fromRGB(36, 36, 40)
+		button.TextColor3 = Color3.fromRGB(240, 240, 245)
 		button.TextSize = 13
 		button.Font = Enum.Font.GothamBold
 		button.TextWrapped = true
 		button.BorderSizePixel = 0
 		button.AutoButtonColor = false
 		button.Parent = floatingButtonGroup or screenGui
-		button.ZIndex = 53
+		button.ZIndex = 54
 
-		addCorner(button, 14)
+		addCorner(button, 16)
 
 		local gradient = Instance.new("UIGradient")
 		gradient.Name = "MainGradient"
 		gradient.Rotation = 90
 		gradient.Color = ColorSequence.new({
-			ColorSequenceKeypoint.new(0, Color3.fromRGB(108, 108, 114)),
-			ColorSequenceKeypoint.new(0.18, Color3.fromRGB(92, 92, 98)),
-			ColorSequenceKeypoint.new(1, Color3.fromRGB(46, 46, 50))
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(64, 64, 70)),
+			ColorSequenceKeypoint.new(0.22, Color3.fromRGB(48, 48, 54)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(26, 26, 30))
 		})
 		gradient.Parent = button
 
 		local stroke = Instance.new("UIStroke")
 		stroke.Name = "ButtonStroke"
-		stroke.Color = Color3.fromRGB(12, 12, 14)
-		stroke.Thickness = 2
-		stroke.Transparency = 0.15
+		stroke.Color = Color3.fromRGB(88, 88, 96)
+		stroke.Thickness = 1.4
+		stroke.Transparency = 0.45
 		stroke.Parent = button
+
+		local innerStroke = Instance.new("UIStroke")
+		innerStroke.Name = "InnerButtonStroke"
+		innerStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		innerStroke.Color = Color3.fromRGB(180, 180, 188)
+		innerStroke.Thickness = 1
+		innerStroke.Transparency = 0.78
+		innerStroke.Parent = button
 
 		makeFloatingButtonDraggable(button)
 
@@ -4506,32 +4514,41 @@ end)
 
 		local gradient = button:FindFirstChild("MainGradient")
 		local stroke = button:FindFirstChild("ButtonStroke")
+		local innerStroke = button:FindFirstChild("InnerButtonStroke")
 
 		if active then
-			button.BackgroundColor3 = Color3.fromRGB(18, 48, 110)
+			button.BackgroundColor3 = Color3.fromRGB(24, 68, 168)
 			if gradient then
 				gradient.Color = ColorSequence.new({
-					ColorSequenceKeypoint.new(0, Color3.fromRGB(42, 96, 182)),
-					ColorSequenceKeypoint.new(0.28, Color3.fromRGB(30, 74, 155)),
-					ColorSequenceKeypoint.new(1, Color3.fromRGB(8, 24, 72))
+					ColorSequenceKeypoint.new(0, Color3.fromRGB(74, 140, 255)),
+					ColorSequenceKeypoint.new(0.28, Color3.fromRGB(38, 102, 222)),
+					ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 40, 120))
 				})
 			end
 			if stroke then
-				stroke.Color = Color3.fromRGB(0, 170, 255)
-				stroke.Transparency = 0
+				stroke.Color = Color3.fromRGB(110, 190, 255)
+				stroke.Transparency = 0.08
+			end
+			if innerStroke then
+				innerStroke.Color = Color3.fromRGB(210, 235, 255)
+				innerStroke.Transparency = 0.48
 			end
 		else
-			button.BackgroundColor3 = Color3.fromRGB(74, 74, 78)
+			button.BackgroundColor3 = Color3.fromRGB(36, 36, 40)
 			if gradient then
 				gradient.Color = ColorSequence.new({
-					ColorSequenceKeypoint.new(0, Color3.fromRGB(108, 108, 114)),
-					ColorSequenceKeypoint.new(0.18, Color3.fromRGB(92, 92, 98)),
-					ColorSequenceKeypoint.new(1, Color3.fromRGB(46, 46, 50))
+					ColorSequenceKeypoint.new(0, Color3.fromRGB(64, 64, 70)),
+					ColorSequenceKeypoint.new(0.22, Color3.fromRGB(48, 48, 54)),
+					ColorSequenceKeypoint.new(1, Color3.fromRGB(26, 26, 30))
 				})
 			end
 			if stroke then
-				stroke.Color = Color3.fromRGB(12, 12, 14)
-				stroke.Transparency = 0.15
+				stroke.Color = Color3.fromRGB(88, 88, 96)
+				stroke.Transparency = 0.45
+			end
+			if innerStroke then
+				innerStroke.Color = Color3.fromRGB(180, 180, 188)
+				innerStroke.Transparency = 0.78
 			end
 		end
 	end
@@ -4582,7 +4599,7 @@ end)
 	floatingButtonGroup.Name = "DQuickControlPanel"
 	floatingButtonGroup.Size = UDim2.new(0, 182, 0, 350)
 	floatingButtonGroup.Position = UDim2.new(0, 16, 0, 105)
-	floatingButtonGroup.BackgroundColor3 = Color3.fromRGB(5, 5, 8)
+	floatingButtonGroup.BackgroundColor3 = Color3.fromRGB(6, 8, 14)
 	floatingButtonGroup.BorderSizePixel = 0
 	floatingButtonGroup.Active = false
 	floatingButtonGroup.Parent = screenGui
@@ -4599,7 +4616,7 @@ end)
 	innerPanel.Name = "InnerPanel"
 	innerPanel.Size = UDim2.new(1, -12, 1, -12)
 	innerPanel.Position = UDim2.new(0, 6, 0, 6)
-	innerPanel.BackgroundColor3 = Color3.fromRGB(10, 10, 14)
+	innerPanel.BackgroundColor3 = Color3.fromRGB(10, 12, 18)
 	innerPanel.BorderSizePixel = 0
 	innerPanel.Parent = floatingButtonGroup
 	innerPanel.ZIndex = 50
@@ -4610,7 +4627,7 @@ end)
 	dBar.Size = UDim2.new(0, 32, 1, -24)
 	dBar.Position = UDim2.new(0, 10, 0, 12)
 	dBar.BackgroundColor3 = Color3.fromRGB(0, 54, 160)
-	dBar.BackgroundTransparency = 0.52
+	dBar.BackgroundTransparency = 0.68
 	dBar.BorderSizePixel = 0
 	dBar.Parent = innerPanel
 	dBar.ZIndex = 51
@@ -4621,7 +4638,7 @@ end)
 	dCurve.Size = UDim2.new(0, 126, 1, -24)
 	dCurve.Position = UDim2.new(1, -136, 0, 12)
 	dCurve.BackgroundColor3 = Color3.fromRGB(0, 54, 160)
-	dCurve.BackgroundTransparency = 0.64
+	dCurve.BackgroundTransparency = 0.76
 	dCurve.BorderSizePixel = 0
 	dCurve.Parent = innerPanel
 	dCurve.ZIndex = 51
