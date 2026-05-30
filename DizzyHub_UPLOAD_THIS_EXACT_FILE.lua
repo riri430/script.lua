@@ -1,4 +1,4 @@
-__DIZZY_UPLOAD_VERSION = "ENVY_AR_ANTIKB_NOFREEZE_V2"
+__DIZZY_UPLOAD_VERSION = "ENVY_AR_NOFREEZE_V3_SHORT_HIT_WINDOW"
 __DIZZY_JUMP_CACHE = __DIZZY_JUMP_CACHE or {UntilTime = 0, Result = false, LastStatusTime = 0, LastDeepScanTime = 0}
 __DIZZY_DROP_SUPPRESS_TOOL_UNTIL = __DIZZY_DROP_SUPPRESS_TOOL_UNTIL or 0
 local Players = game:GetService("Players")
@@ -3220,9 +3220,9 @@ end
 local function startAntiKnockbackWindow()
 	local now = os.clock()
 
-	antiKnockbackUntil = math.max(antiKnockbackUntil, now + 0.42)
-	keepMovingUntil = math.max(keepMovingUntil, now + 0.28)
-	manualMoveUntil = math.max(manualMoveUntil, now + 0.28)
+	antiKnockbackUntil = math.max(antiKnockbackUntil, now + 0.22)
+	keepMovingUntil = math.max(keepMovingUntil, now + 0.18)
+	manualMoveUntil = math.max(manualMoveUntil, now + 0.18)
 end
 
 local function getAntiKnockbackSpeed()
@@ -3280,6 +3280,8 @@ local function cancelKnockback()
 		if flatMove.Magnitude > 0.05 then
 			direction = flatMove.Unit
 		end
+	elseif os.clock() <= antiKnockbackUntil and lastMoveDirection.Magnitude > 0.05 then
+		direction = lastMoveDirection.Unit
 	end
 
 	local speed = getAntiKnockbackSpeed()
@@ -3289,7 +3291,7 @@ local function cancelKnockback()
 		lastMoveDirection = direction
 		finalFlat = Vector3.new(direction.X * speed, 0, direction.Z * speed)
 	else
-		local maxFlat = 6
+		local maxFlat = 10
 
 		if finalFlat.Magnitude > maxFlat then
 			finalFlat = finalFlat.Unit * maxFlat
@@ -3299,7 +3301,7 @@ local function cancelKnockback()
 	local yVelocity = currentVelocity.Y
 
 	if os.clock() <= antiKnockbackUntil or isRealRagdollState() or humanoid.PlatformStand then
-		yVelocity = math.clamp(yVelocity, -90, 12)
+		yVelocity = math.clamp(yVelocity, -90, 22)
 	end
 
 	if humanoid.FloorMaterial ~= Enum.Material.Air and yVelocity < 0 then
@@ -3458,11 +3460,17 @@ local function forceFastGetUp()
 		startAntiKnockbackWindow()
 
 		pcall(function()
-			humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+			if humanoid.FloorMaterial == Enum.Material.Air then
+				humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
+			else
+				humanoid:ChangeState(Enum.HumanoidStateType.Running)
+			end
 		end)
 
 		task.defer(function()
 			if humanoid and humanoid.Health > 0 then
+				humanoid.PlatformStand = false
+				humanoid.Sit = false
 				pcall(function()
 					if humanoid.FloorMaterial == Enum.Material.Air then
 						humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
@@ -3514,6 +3522,8 @@ local function forceAntiRagdollMovementAssist()
 		if flat.Magnitude > 0.05 then
 			direction = flat.Unit
 		end
+	elseif os.clock() <= antiKnockbackUntil and lastMoveDirection.Magnitude > 0.05 then
+		direction = lastMoveDirection.Unit
 	end
 
 	pcall(function()
@@ -3526,11 +3536,11 @@ local function forceAntiRagdollMovementAssist()
 		local velocity = humanoidRootPart.AssemblyLinearVelocity
 		local flatVelocity = Vector3.new(velocity.X, 0, velocity.Z)
 
-		if os.clock() <= antiKnockbackUntil and flatVelocity.Magnitude > 6 then
+		if os.clock() <= antiKnockbackUntil and flatVelocity.Magnitude > 10 then
 			humanoidRootPart.AssemblyLinearVelocity = Vector3.new(
-				flatVelocity.Unit.X * 6,
-				math.clamp(velocity.Y, -90, 12),
-				flatVelocity.Unit.Z * 6
+				flatVelocity.Unit.X * 10,
+				math.clamp(velocity.Y, -90, 22),
+				flatVelocity.Unit.Z * 10
 			)
 			humanoidRootPart.AssemblyAngularVelocity = Vector3.zero
 		end
@@ -3551,7 +3561,7 @@ local function forceAntiRagdollMovementAssist()
 	local yVelocity = velocity.Y
 
 	if os.clock() <= antiKnockbackUntil or isRealRagdollState() or humanoid.PlatformStand then
-		yVelocity = math.clamp(yVelocity, -90, 12)
+		yVelocity = math.clamp(yVelocity, -90, 22)
 	end
 
 	humanoidRootPart.AssemblyLinearVelocity = Vector3.new(
