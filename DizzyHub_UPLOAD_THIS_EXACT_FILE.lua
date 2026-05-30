@@ -1,4 +1,4 @@
-__DIZZY_UPLOAD_VERSION = "ENVY_AR_V6_SHORT_RAGDOLL_NO_KNOCKBACK"
+__DIZZY_UPLOAD_VERSION = "ENVY_AR_V6_GUI_STAY_FIX"
 __DIZZY_JUMP_CACHE = __DIZZY_JUMP_CACHE or {UntilTime = 0, Result = false, LastStatusTime = 0, LastDeepScanTime = 0}
 __DIZZY_DROP_SUPPRESS_TOOL_UNTIL = __DIZZY_DROP_SUPPRESS_TOOL_UNTIL or 0
 local Players = game:GetService("Players")
@@ -3983,19 +3983,17 @@ local function createGui()
 	for _, oldGui in ipairs(playerGui:GetChildren()) do
 		if oldGui:IsA("ScreenGui") then
 			local oldName = string.lower(oldGui.Name or "")
-
-			if string.find(oldName, "dizzy", 1, true)
-				or string.find(oldName, "rhgui", 1, true)
-				or oldGui:FindFirstChild("DizzyHubPanel", true)
+			if oldName == "rhgui_v89_medusa_counter_once"
+				or oldName == "mj4p_v89_client_panel"
 				or oldGui:FindFirstChild("RHPanel", true)
-				or oldGui:FindFirstChild("DizzyHubStatus", true) then
+				or oldGui:FindFirstChild("MJ4PMainPanel", true) then
 				oldGui:Destroy()
 			end
 		end
 	end
 
 	screenGui = Instance.new("ScreenGui")
-	screenGui.Name = "RHGUI_V89_MEDUSA_COUNTER_ONCE"
+	screenGui.Name = "MJ4P_V89_CLIENT_PANEL"
 	screenGui.IgnoreGuiInset = true
 	screenGui.ResetOnSpawn = false
 	screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
@@ -4012,21 +4010,16 @@ local function createGui()
 	screenGui:SetAttribute("BatCounterLastTime", 0)
 
 	task.spawn(function()
-		for _ = 1, 30 do
+		for _ = 1, 8 do
 			for _, oldGui in ipairs(playerGui:GetChildren()) do
 				if oldGui ~= screenGui and oldGui:IsA("ScreenGui") then
 					local oldName = string.lower(oldGui.Name or "")
-
-					if string.find(oldName, "dizzy", 1, true)
-						or string.find(oldName, "rhgui", 1, true)
-						or oldGui:FindFirstChild("DizzyHubPanel", true)
-						or oldGui:FindFirstChild("RHPanel", true)
-						or oldGui:FindFirstChild("DizzyHubStatus", true) then
+					if oldName == "rhgui_v89_medusa_counter_once"
+						or oldGui:FindFirstChild("RHPanel", true) then
 						oldGui:Destroy()
 					end
 				end
 			end
-
 			task.wait(0.1)
 		end
 	end)
@@ -4038,7 +4031,7 @@ local fullSize = UDim2.new(0, 620, 0, 368)
 	local fullBodySize = UDim2.new(1, 0, 1, 0)
 
 	mainFrame = Instance.new("Frame")
-	mainFrame.Name = "RHPanel"
+	mainFrame.Name = "MJ4PMainPanel"
 	mainFrame.Size = fullSize
 	mainFrame.Position = UDim2.new(0.5, -310, 0, 142)
 	mainFrame.BackgroundColor3 = PANEL_COLOR
@@ -4523,7 +4516,7 @@ end)
 	end
 
 	floatingButtonGroup = Instance.new("Frame")
-	floatingButtonGroup.Name = "RHFloatingButtonGroup"
+	floatingButtonGroup.Name = "MJ4PFloatingButtonGroup"
 	floatingButtonGroup.Size = UDim2.new(0, 158, 0, 326)
 	floatingButtonGroup.Position = UDim2.new(0, 16, 0, 105)
 	floatingButtonGroup.BackgroundTransparency = 1
