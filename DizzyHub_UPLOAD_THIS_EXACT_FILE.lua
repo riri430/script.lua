@@ -1,4 +1,4 @@
-__DIZZY_UPLOAD_VERSION = "FIX_AR_DROP_NOBATPULL_KEEP_BATCOUNTER"
+__DIZZY_UPLOAD_VERSION = "FIX_1SEC_DROP_NO_HIGHSPEED_BAT_NORESPAWN"
 __DIZZY_JUMP_CACHE = __DIZZY_JUMP_CACHE or {UntilTime = 0, Result = false, LastStatusTime = 0, LastDeepScanTime = 0}
 __DIZZY_DROP_SUPPRESS_TOOL_UNTIL = __DIZZY_DROP_SUPPRESS_TOOL_UNTIL or 0
 local Players = game:GetService("Players")
@@ -2316,15 +2316,9 @@ local function enableLocalRespawnSoftener()
 
 	pcall(function()
 		humanoid.BreakJointsOnDeath = false
-	end)
-
-
-	pcall(function()
-		humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
-	end)
-
-	pcall(function()
-		humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
+		humanoid.PlatformStand = false
+		humanoid.Sit = false
+		humanoid.AutoRotate = true
 	end)
 end
 
@@ -2490,7 +2484,7 @@ end
 local function safeLocalDropHeld()
 	local now = os.clock()
 
-	__DIZZY_DROP_SUPPRESS_TOOL_UNTIL = now + 3.5
+	__DIZZY_DROP_SUPPRESS_TOOL_UNTIL = now + 1.0
 	toolGuardUntil = 0
 	lastHeldTool = nil
 
@@ -2501,7 +2495,7 @@ local function safeLocalDropHeld()
 	end)
 
 	task.spawn(function()
-		local suppressUntil = os.clock() + 1.15
+		local suppressUntil = os.clock() + 1.0
 
 		while os.clock() < suppressUntil do
 			toolGuardUntil = 0
@@ -2526,7 +2520,17 @@ local function safeLocalDropHeld()
 
 	task.spawn(function()
 		pcall(function()
-			safeAvatarPopForDropV67()
+			local dropHeight = nil
+
+			pcall(function()
+				if getHeightAboveGround then
+					dropHeight = getHeightAboveGround()
+				end
+			end)
+
+			if not dropHeight or dropHeight <= 24 then
+				safeAvatarPopForDropV67()
+			end
 		end)
 	end)
 
@@ -4638,6 +4642,11 @@ RunService.RenderStepped:Connect(function()
 			local currentState = humanoid:GetState()
 			local now = os.clock()
 
+			if __DIZZY_DROP_SUPPRESS_TOOL_UNTIL and now < __DIZZY_DROP_SUPPRESS_TOOL_UNTIL then
+				screenGui:SetAttribute("BatCounterLastVelocity", velocity.Magnitude)
+				return
+			end
+
 			if currentState == Enum.HumanoidStateType.Jumping or humanoid.Jump then
 				screenGui:SetAttribute("BatCounterLastJumpTime", now)
 			end
@@ -4679,9 +4688,11 @@ RunService.RenderStepped:Connect(function()
 
 			local velocitySpike = velocity.Magnitude - previousVelocity > 18
 
+			local antiKbSpeedForCounter = getAntiKnockbackSpeed and getAntiKnockbackSpeed() or DEFAULT_WALK_SPEED
+
 			local looksLikeBatHit =
-				strongRagdollState
-				or (((flatSpeed > 42) or (ySpeed > 65)) and velocitySpike and not recentlyJumped)
+				(strongRagdollState and not recentlyJumped)
+				or (ySpeed > 75 and velocitySpike and not recentlyJumped and flatSpeed < antiKbSpeedForCounter + 35)
 
 			if not looksLikeBatHit then
 				screenGui:SetAttribute("BatCounterLastVelocity", velocity.Magnitude)
@@ -4764,6 +4775,11 @@ RunService.RenderStepped:Connect(function()
 			end
 
 			local now = os.clock()
+
+			if __DIZZY_DROP_SUPPRESS_TOOL_UNTIL and now < __DIZZY_DROP_SUPPRESS_TOOL_UNTIL then
+				return
+			end
+
 			local medusaBlockedUntil = screenGui:GetAttribute("MedusaCounterBlockUntil")
 
 			if typeof(medusaBlockedUntil) == "number" and now < medusaBlockedUntil then
