@@ -1,4 +1,4 @@
-__DIZZY_UPLOAD_VERSION = "ENVY_AR_V3_GUI_DISAPPEAR_FIX"
+__DIZZY_UPLOAD_VERSION = "ENVY_AR_V4_NO_MOVEMENT_FREEZE"
 __DIZZY_JUMP_CACHE = __DIZZY_JUMP_CACHE or {UntilTime = 0, Result = false, LastStatusTime = 0, LastDeepScanTime = 0}
 __DIZZY_DROP_SUPPRESS_TOOL_UNTIL = __DIZZY_DROP_SUPPRESS_TOOL_UNTIL or 0
 local Players = game:GetService("Players")
@@ -76,10 +76,10 @@ local CHILLI_MOVE_ASSIST_AFTER_HIT_TIME = 1.35
 local CHILLI_MOVE_ASSIST_MIN_SPEED = 5
 
 local antiKnockbackUntil = 0
-local ANTI_KNOCKBACK_RECOVERY_TIME = 0.16
+local ANTI_KNOCKBACK_RECOVERY_TIME = 0.09
 local ANTI_KNOCKBACK_EXTRA_SPEED = 24
 local ANTI_KNOCKBACK_MAX_FALL_SPEED = -95
-local ANTI_KNOCKBACK_MAX_UP_SPEED = 36
+local ANTI_KNOCKBACK_MAX_UP_SPEED = 28
 
 local lastMoveDirection = Vector3.zero
 local keepMovingUntil = 0
@@ -3220,9 +3220,9 @@ end
 local function startAntiKnockbackWindow()
 	local now = os.clock()
 
-	antiKnockbackUntil = math.max(antiKnockbackUntil, now + 0.22)
-	keepMovingUntil = math.max(keepMovingUntil, now + 0.18)
-	manualMoveUntil = math.max(manualMoveUntil, now + 0.18)
+	antiKnockbackUntil = math.max(antiKnockbackUntil, now + 0.11)
+	keepMovingUntil = math.max(keepMovingUntil, now + 0.07)
+	manualMoveUntil = math.max(manualMoveUntil, now + 0.07)
 end
 
 local function getAntiKnockbackSpeed()
@@ -3265,6 +3265,7 @@ local function cancelKnockback()
 		return
 	end
 
+	__DIZZY_LAST_KB_CANCEL_TIME = os.clock()
 	keepGuiButtonsAlive()
 
 	local currentVelocity = humanoidRootPart.AssemblyLinearVelocity
@@ -3291,10 +3292,14 @@ local function cancelKnockback()
 		lastMoveDirection = direction
 		finalFlat = Vector3.new(direction.X * speed, 0, direction.Z * speed)
 	else
-		local maxFlat = 10
+		local maxFlat = math.max(speed + 8, 22)
 
 		if finalFlat.Magnitude > maxFlat then
-			finalFlat = finalFlat.Unit * maxFlat
+			if lastMoveDirection.Magnitude > 0.05 then
+				finalFlat = lastMoveDirection.Unit * speed
+			else
+				finalFlat = finalFlat.Unit * maxFlat
+			end
 		end
 	end
 
@@ -3377,7 +3382,7 @@ local function shouldCancelKnockback()
 	local speed = getAntiKnockbackSpeed()
 
 	if now <= antiKnockbackUntil then
-		return true
+		return now - (__DIZZY_LAST_KB_CANCEL_TIME or 0) > 0.055
 	end
 
 	if now - lastKnockbackDetectTime < KNOCKBACK_DETECT_COOLDOWN then
@@ -3536,11 +3541,13 @@ local function forceAntiRagdollMovementAssist()
 		local velocity = humanoidRootPart.AssemblyLinearVelocity
 		local flatVelocity = Vector3.new(velocity.X, 0, velocity.Z)
 
-		if os.clock() <= antiKnockbackUntil and flatVelocity.Magnitude > 10 then
+		local maxFlat = math.max(getAntiKnockbackSpeed() + 8, 22)
+
+		if os.clock() <= antiKnockbackUntil and flatVelocity.Magnitude > maxFlat then
 			humanoidRootPart.AssemblyLinearVelocity = Vector3.new(
-				flatVelocity.Unit.X * 10,
+				flatVelocity.Unit.X * maxFlat,
 				math.clamp(velocity.Y, -90, 22),
-				flatVelocity.Unit.Z * 10
+				flatVelocity.Unit.Z * maxFlat
 			)
 			humanoidRootPart.AssemblyAngularVelocity = Vector3.zero
 		end
@@ -3583,6 +3590,10 @@ local function applyAntiRagdollState()
 	end
 
 	if antiRagdollEnabled then
+		setHumanoidStateEnabledSafe(Enum.HumanoidStateType.Ragdoll, false)
+		setHumanoidStateEnabledSafe(Enum.HumanoidStateType.FallingDown, false)
+		setHumanoidStateEnabledSafe(Enum.HumanoidStateType.PlatformStanding, false)
+
 		if os.clock() - (antiRagdollLastLightRepair or 0) > 0.75 then
 			antiRagdollLastLightRepair = os.clock()
 			repairCharacterJointsLight()
@@ -3604,7 +3615,10 @@ local function applyAntiRagdollState()
 		end
 
 		forceFastGetUp()
-		forceAntiRagdollMovementAssist()
+
+		if os.clock() <= antiKnockbackUntil and (isRealRagdollState() or humanoid.PlatformStand or humanoid.Sit) then
+			forceAntiRagdollMovementAssist()
+		end
 	else
 		setHumanoidStateEnabledSafe(Enum.HumanoidStateType.Ragdoll, true)
 		setHumanoidStateEnabledSafe(Enum.HumanoidStateType.FallingDown, true)
@@ -3622,9 +3636,9 @@ local function startAntiRagdollWatcher()
 		return
 	end
 
-	setHumanoidStateEnabledSafe(Enum.HumanoidStateType.Ragdoll, true)
-	setHumanoidStateEnabledSafe(Enum.HumanoidStateType.FallingDown, true)
-	setHumanoidStateEnabledSafe(Enum.HumanoidStateType.PlatformStanding, true)
+	setHumanoidStateEnabledSafe(Enum.HumanoidStateType.Ragdoll, false)
+	setHumanoidStateEnabledSafe(Enum.HumanoidStateType.FallingDown, false)
+	setHumanoidStateEnabledSafe(Enum.HumanoidStateType.PlatformStanding, false)
 
 	table.insert(antiRagdollConnections, humanoid.StateChanged:Connect(function(_, newState)
 		if not antiRagdollEnabled then
@@ -3637,7 +3651,10 @@ local function startAntiRagdollWatcher()
 			or newState == Enum.HumanoidStateType.Physics then
 
 			startAntiKnockbackWindow()
-			task.defer(applyAntiRagdollState)
+			task.defer(function()
+				forceFastGetUp()
+				cancelKnockback()
+			end)
 		end
 	end))
 
@@ -3661,7 +3678,12 @@ local function startAntiRagdollWatcher()
 
 	antiRagdollHeartbeatConnection = RunService.Heartbeat:Connect(function()
 		if antiRagdollEnabled then
-			applyAntiRagdollState()
+			local now = os.clock()
+
+			if now - (__DIZZY_AR_LAST_HEARTBEAT or 0) > 0.055 then
+				__DIZZY_AR_LAST_HEARTBEAT = now
+				applyAntiRagdollState()
+			end
 		end
 	end)
 
@@ -3673,6 +3695,13 @@ local function updateAntiRagdoll()
 		return
 	end
 
+	local now = os.clock()
+
+	if now - (__DIZZY_AR_LAST_UPDATE or 0) < 0.035 then
+		return
+	end
+
+	__DIZZY_AR_LAST_UPDATE = now
 	applyAntiRagdollState()
 end
 
