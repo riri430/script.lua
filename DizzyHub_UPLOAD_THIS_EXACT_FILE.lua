@@ -1,4 +1,4 @@
-__DIZZY_UPLOAD_VERSION = "DPANEL_BLACK_BLUE_BUTTONS_ACTIVE_V3"
+__DIZZY_UPLOAD_VERSION = "DPANEL_BLACK_BLUE_SAFE_V4"
 __DIZZY_JUMP_CACHE = __DIZZY_JUMP_CACHE or {UntilTime = 0, Result = false, LastStatusTime = 0, LastDeepScanTime = 0}
 __DIZZY_DROP_SUPPRESS_TOOL_UNTIL = __DIZZY_DROP_SUPPRESS_TOOL_UNTIL or 0
 local Players = game:GetService("Players")
@@ -3861,6 +3861,7 @@ local function updateSelected(sectionName)
 		else
 			button.BackgroundColor3 = BUTTON_BLACK
 			button.TextColor3 = BUTTON_BLUE_TEXT
+			button.TextColor3 = BUTTON_BLUE_TEXT
 		end
 	end
 end
@@ -4385,7 +4386,7 @@ end)
 		button.Position = UDim2.new(0, 8, 0, 8 + ((order - 1) * 50))
 		button.BackgroundColor3 = BUTTON_BLACK
 		button.Text = text
-		button.TextColor3 = BUTTON_BLUE_TEXT
+		button.TextColor3 = Color3.fromRGB(240, 240, 245)
 		button.TextSize = 15
 		button.Font = Enum.Font.GothamBold
 		button.BorderSizePixel = 0
@@ -4469,12 +4470,36 @@ end)
 		button.Font = Enum.Font.GothamBold
 		button.TextWrapped = true
 		button.BorderSizePixel = 0
-		button.AutoButtonColor = true
+		button.AutoButtonColor = false
 		button.Parent = floatingButtonGroup or screenGui
 		button.ZIndex = 54
 
 		addCorner(button, 16)
 
+		local gradient = Instance.new("UIGradient")
+		gradient.Name = "MainGradient"
+		gradient.Rotation = 90
+		gradient.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(64, 64, 70)),
+			ColorSequenceKeypoint.new(0.22, Color3.fromRGB(48, 48, 54)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(26, 26, 30))
+		})
+		gradient.Parent = button
+
+		local stroke = Instance.new("UIStroke")
+		stroke.Name = "ButtonStroke"
+		stroke.Color = Color3.fromRGB(88, 88, 96)
+		stroke.Thickness = 1.4
+		stroke.Transparency = 0.45
+		stroke.Parent = button
+
+		local innerStroke = Instance.new("UIStroke")
+		innerStroke.Name = "InnerButtonStroke"
+		innerStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		innerStroke.Color = Color3.fromRGB(180, 180, 188)
+		innerStroke.Thickness = 1
+		innerStroke.Transparency = 0.78
+		innerStroke.Parent = button
 
 		makeFloatingButtonDraggable(button)
 
@@ -4492,16 +4517,46 @@ end)
 			return
 		end
 
-		-- Remove old gradient/stroke backgrounds so floating buttons stay flat.
-		for _, child in ipairs(button:GetChildren()) do
-			if child:IsA("UIGradient") or child:IsA("UIStroke") then
-				child:Destroy()
+		local gradient = button:FindFirstChild("MainGradient")
+		local stroke = button:FindFirstChild("ButtonStroke")
+		local innerStroke = button:FindFirstChild("InnerButtonStroke")
+
+		if active then
+			button.BackgroundColor3 = SELECTED_COLOR
+			button.TextColor3 = Color3.fromRGB(255, 255, 255)
+			if gradient then
+				gradient.Color = ColorSequence.new({
+					ColorSequenceKeypoint.new(0, Color3.fromRGB(74, 140, 255)),
+					ColorSequenceKeypoint.new(0.28, Color3.fromRGB(38, 102, 222)),
+					ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 40, 120))
+				})
+			end
+			if stroke then
+				stroke.Color = Color3.fromRGB(110, 190, 255)
+				stroke.Transparency = 0.08
+			end
+			if innerStroke then
+				innerStroke.Color = Color3.fromRGB(210, 235, 255)
+				innerStroke.Transparency = 0.48
+			end
+		else
+			button.BackgroundColor3 = BUTTON_BLACK
+			if gradient then
+				gradient.Color = ColorSequence.new({
+					ColorSequenceKeypoint.new(0, Color3.fromRGB(64, 64, 70)),
+					ColorSequenceKeypoint.new(0.22, Color3.fromRGB(48, 48, 54)),
+					ColorSequenceKeypoint.new(1, Color3.fromRGB(26, 26, 30))
+				})
+			end
+			if stroke then
+				stroke.Color = Color3.fromRGB(88, 88, 96)
+				stroke.Transparency = 0.45
+			end
+			if innerStroke then
+				innerStroke.Color = Color3.fromRGB(180, 180, 188)
+				innerStroke.Transparency = 0.78
 			end
 		end
-
-		button.BackgroundTransparency = 0
-		button.BackgroundColor3 = active and SELECTED_COLOR or BUTTON_BLACK
-		button.TextColor3 = active and Color3.fromRGB(255, 255, 255) or BUTTON_BLUE_TEXT
 	end
 
 	updateFloatingButtons = function()
