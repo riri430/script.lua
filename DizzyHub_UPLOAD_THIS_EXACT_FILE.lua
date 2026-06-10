@@ -1,4 +1,4 @@
-__DIZZY_UPLOAD_VERSION = "DPANEL_BLACK_BLUE_ACTIVE_LOADSAFE_V5"
+__DIZZY_UPLOAD_VERSION = "BLACK_BLUE_ACTIVE_UI_FIXED_V3"
 __DIZZY_JUMP_CACHE = __DIZZY_JUMP_CACHE or {UntilTime = 0, Result = false, LastStatusTime = 0, LastDeepScanTime = 0}
 __DIZZY_DROP_SUPPRESS_TOOL_UNTIL = __DIZZY_DROP_SUPPRESS_TOOL_UNTIL or 0
 local Players = game:GetService("Players")
@@ -16,11 +16,11 @@ local mainFrame
 local statusLabel
 local BUTTON_BLACK = Color3.fromRGB(0, 0, 0)
 local BUTTON_BLUE_TEXT = Color3.fromRGB(0, 170, 255)
-local ACTIVE_BUTTON_BLUE = Color3.fromRGB(0, 120, 255)
+local BUTTON_ACTIVE_BLUE = Color3.fromRGB(0, 120, 255)
 local PANEL_COLOR = Color3.fromRGB(25, 25, 30)
 local LEFT_COLOR = Color3.fromRGB(32, 32, 40)
 local RIGHT_COLOR = Color3.fromRGB(36, 36, 44)
-local SELECTED_COLOR = ACTIVE_BUTTON_BLUE
+local SELECTED_COLOR = BUTTON_ACTIVE_BLUE
 local BOX_COLOR = Color3.fromRGB(45, 45, 55)
 local SECTION_COLOR = Color3.fromRGB(50, 50, 62)
 
@@ -3781,7 +3781,7 @@ local function makeToggle(parent, text, getState, callback)
 	local function refresh()
 		local enabled = getState()
 		button.Text = text .. ": " .. (enabled and "ON" or "OFF")
-		button.BackgroundColor3 = enabled and ACTIVE_BUTTON_BLUE or BUTTON_BLACK
+		button.BackgroundColor3 = enabled and BUTTON_ACTIVE_BLUE or BUTTON_BLACK
 		button.TextColor3 = enabled and Color3.fromRGB(255, 255, 255) or BUTTON_BLUE_TEXT
 	end
 
@@ -3857,7 +3857,7 @@ end
 local function updateSelected(sectionName)
 	for name, button in pairs(sectionButtons) do
 		if name == sectionName then
-			button.BackgroundColor3 = ACTIVE_BUTTON_BLUE
+			button.BackgroundColor3 = BUTTON_ACTIVE_BLUE
 			button.TextColor3 = Color3.fromRGB(255, 255, 255)
 		else
 			button.BackgroundColor3 = BUTTON_BLACK
@@ -4074,7 +4074,7 @@ local fullSize = UDim2.new(0, 620, 0, 368)
 	minimizeButton.Position = UDim2.new(1, -38, 0, 4)
 	minimizeButton.BackgroundColor3 = BUTTON_BLACK
 	minimizeButton.Text = "-"
-	minimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+	minimizeButton.TextColor3 = BUTTON_BLUE_TEXT
 	minimizeButton.TextSize = 20
 	minimizeButton.Font = Enum.Font.GothamBold
 	minimizeButton.BorderSizePixel = 0
@@ -4480,9 +4480,11 @@ end)
 		gradient.Name = "MainGradient"
 		gradient.Rotation = 90
 		gradient.Color = ColorSequence.new({
-			ColorSequenceKeypoint.new(0, BUTTON_BLACK),
-			ColorSequenceKeypoint.new(1, BUTTON_BLACK)
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(64, 64, 70)),
+			ColorSequenceKeypoint.new(0.22, Color3.fromRGB(48, 48, 54)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(26, 26, 30))
 		})
+		gradient.Transparency = NumberSequence.new(1)
 		gradient.Parent = button
 
 		local stroke = Instance.new("UIStroke")
@@ -4520,39 +4522,20 @@ end)
 		local stroke = button:FindFirstChild("ButtonStroke")
 		local innerStroke = button:FindFirstChild("InnerButtonStroke")
 
-		if active then
-			button.BackgroundColor3 = ACTIVE_BUTTON_BLUE
-			button.TextColor3 = Color3.fromRGB(255, 255, 255)
-			if gradient then
-				gradient.Color = ColorSequence.new({
-					ColorSequenceKeypoint.new(0, Color3.fromRGB(74, 140, 255)),
-					ColorSequenceKeypoint.new(0.28, Color3.fromRGB(38, 102, 222)),
-					ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 40, 120))
-				})
-			end
-			if stroke then
-				stroke.Color = Color3.fromRGB(110, 190, 255)
-				stroke.Transparency = 0.08
-			end
-			if innerStroke then
-				innerStroke.Color = Color3.fromRGB(210, 235, 255)
-				innerStroke.Transparency = 0.48
-			end
-		else
-			button.BackgroundColor3 = BUTTON_BLACK
-			button.TextColor3 = BUTTON_BLUE_TEXT
-			if gradient then
-				gradient.Color = ColorSequence.new({
-					ColorSequenceKeypoint.new(0, BUTTON_BLACK),
-					ColorSequenceKeypoint.new(1, BUTTON_BLACK)
-				})
-			end
-			if stroke then
-				stroke.Transparency = 1
-			end
-			if innerStroke then
-				innerStroke.Transparency = 1
-			end
+		button.BackgroundTransparency = 0
+		button.BackgroundColor3 = active and BUTTON_ACTIVE_BLUE or BUTTON_BLACK
+		button.TextColor3 = active and Color3.fromRGB(255, 255, 255) or BUTTON_BLUE_TEXT
+
+		if gradient then
+			gradient.Transparency = NumberSequence.new(1)
+		end
+
+		if stroke then
+			stroke.Transparency = 1
+		end
+
+		if innerStroke then
+			innerStroke.Transparency = 1
 		end
 	end
 
@@ -4602,6 +4585,7 @@ end)
 	floatingButtonGroup.Name = "DQuickControlPanel"
 	floatingButtonGroup.Size = UDim2.new(0, 182, 0, 350)
 	floatingButtonGroup.Position = UDim2.new(0, 16, 0, 105)
+	floatingButtonGroup.BackgroundColor3 = BUTTON_BLACK
 	floatingButtonGroup.BackgroundTransparency = 1
 	floatingButtonGroup.BorderSizePixel = 0
 	floatingButtonGroup.Active = false
@@ -4619,6 +4603,7 @@ end)
 	innerPanel.Name = "InnerPanel"
 	innerPanel.Size = UDim2.new(1, -12, 1, -12)
 	innerPanel.Position = UDim2.new(0, 6, 0, 6)
+	innerPanel.BackgroundColor3 = BUTTON_BLACK
 	innerPanel.BackgroundTransparency = 1
 	innerPanel.BorderSizePixel = 0
 	innerPanel.Parent = floatingButtonGroup
@@ -4651,6 +4636,7 @@ end)
 	dCut.Name = "DCut"
 	dCut.Size = UDim2.new(0, 52, 1, -52)
 	dCut.Position = UDim2.new(0, 48, 0, 26)
+	dCut.BackgroundColor3 = BUTTON_BLACK
 	dCut.BackgroundTransparency = 1
 	dCut.BorderSizePixel = 0
 	dCut.Parent = innerPanel
