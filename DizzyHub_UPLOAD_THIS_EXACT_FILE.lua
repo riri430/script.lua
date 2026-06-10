@@ -1,4 +1,4 @@
-__DIZZY_UPLOAD_VERSION = "DPANEL_BLACK_BLUE_SAFE_V4"
+__DIZZY_UPLOAD_VERSION = "DPANEL_BLACK_BLUE_ACTIVE_LOADSAFE_V5"
 __DIZZY_JUMP_CACHE = __DIZZY_JUMP_CACHE or {UntilTime = 0, Result = false, LastStatusTime = 0, LastDeepScanTime = 0}
 __DIZZY_DROP_SUPPRESS_TOOL_UNTIL = __DIZZY_DROP_SUPPRESS_TOOL_UNTIL or 0
 local Players = game:GetService("Players")
@@ -16,10 +16,11 @@ local mainFrame
 local statusLabel
 local BUTTON_BLACK = Color3.fromRGB(0, 0, 0)
 local BUTTON_BLUE_TEXT = Color3.fromRGB(0, 170, 255)
+local ACTIVE_BUTTON_BLUE = Color3.fromRGB(0, 120, 255)
 local PANEL_COLOR = Color3.fromRGB(25, 25, 30)
 local LEFT_COLOR = Color3.fromRGB(32, 32, 40)
 local RIGHT_COLOR = Color3.fromRGB(36, 36, 44)
-local SELECTED_COLOR = Color3.fromRGB(0, 120, 255)
+local SELECTED_COLOR = ACTIVE_BUTTON_BLUE
 local BOX_COLOR = Color3.fromRGB(45, 45, 55)
 local SECTION_COLOR = Color3.fromRGB(50, 50, 62)
 
@@ -3780,7 +3781,7 @@ local function makeToggle(parent, text, getState, callback)
 	local function refresh()
 		local enabled = getState()
 		button.Text = text .. ": " .. (enabled and "ON" or "OFF")
-		button.BackgroundColor3 = enabled and SELECTED_COLOR or BUTTON_BLACK
+		button.BackgroundColor3 = enabled and ACTIVE_BUTTON_BLUE or BUTTON_BLACK
 		button.TextColor3 = enabled and Color3.fromRGB(255, 255, 255) or BUTTON_BLUE_TEXT
 	end
 
@@ -3856,11 +3857,10 @@ end
 local function updateSelected(sectionName)
 	for name, button in pairs(sectionButtons) do
 		if name == sectionName then
-			button.BackgroundColor3 = SELECTED_COLOR
+			button.BackgroundColor3 = ACTIVE_BUTTON_BLUE
 			button.TextColor3 = Color3.fromRGB(255, 255, 255)
 		else
 			button.BackgroundColor3 = BUTTON_BLACK
-			button.TextColor3 = BUTTON_BLUE_TEXT
 			button.TextColor3 = BUTTON_BLUE_TEXT
 		end
 	end
@@ -4386,7 +4386,7 @@ end)
 		button.Position = UDim2.new(0, 8, 0, 8 + ((order - 1) * 50))
 		button.BackgroundColor3 = BUTTON_BLACK
 		button.Text = text
-		button.TextColor3 = Color3.fromRGB(240, 240, 245)
+		button.TextColor3 = BUTTON_BLUE_TEXT
 		button.TextSize = 15
 		button.Font = Enum.Font.GothamBold
 		button.BorderSizePixel = 0
@@ -4480,9 +4480,8 @@ end)
 		gradient.Name = "MainGradient"
 		gradient.Rotation = 90
 		gradient.Color = ColorSequence.new({
-			ColorSequenceKeypoint.new(0, Color3.fromRGB(64, 64, 70)),
-			ColorSequenceKeypoint.new(0.22, Color3.fromRGB(48, 48, 54)),
-			ColorSequenceKeypoint.new(1, Color3.fromRGB(26, 26, 30))
+			ColorSequenceKeypoint.new(0, BUTTON_BLACK),
+			ColorSequenceKeypoint.new(1, BUTTON_BLACK)
 		})
 		gradient.Parent = button
 
@@ -4490,7 +4489,7 @@ end)
 		stroke.Name = "ButtonStroke"
 		stroke.Color = Color3.fromRGB(88, 88, 96)
 		stroke.Thickness = 1.4
-		stroke.Transparency = 0.45
+		stroke.Transparency = 1
 		stroke.Parent = button
 
 		local innerStroke = Instance.new("UIStroke")
@@ -4498,7 +4497,7 @@ end)
 		innerStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 		innerStroke.Color = Color3.fromRGB(180, 180, 188)
 		innerStroke.Thickness = 1
-		innerStroke.Transparency = 0.78
+		innerStroke.Transparency = 1
 		innerStroke.Parent = button
 
 		makeFloatingButtonDraggable(button)
@@ -4522,7 +4521,7 @@ end)
 		local innerStroke = button:FindFirstChild("InnerButtonStroke")
 
 		if active then
-			button.BackgroundColor3 = SELECTED_COLOR
+			button.BackgroundColor3 = ACTIVE_BUTTON_BLUE
 			button.TextColor3 = Color3.fromRGB(255, 255, 255)
 			if gradient then
 				gradient.Color = ColorSequence.new({
@@ -4541,20 +4540,18 @@ end)
 			end
 		else
 			button.BackgroundColor3 = BUTTON_BLACK
+			button.TextColor3 = BUTTON_BLUE_TEXT
 			if gradient then
 				gradient.Color = ColorSequence.new({
-					ColorSequenceKeypoint.new(0, Color3.fromRGB(64, 64, 70)),
-					ColorSequenceKeypoint.new(0.22, Color3.fromRGB(48, 48, 54)),
-					ColorSequenceKeypoint.new(1, Color3.fromRGB(26, 26, 30))
+					ColorSequenceKeypoint.new(0, BUTTON_BLACK),
+					ColorSequenceKeypoint.new(1, BUTTON_BLACK)
 				})
 			end
 			if stroke then
-				stroke.Color = Color3.fromRGB(88, 88, 96)
-				stroke.Transparency = 0.45
+				stroke.Transparency = 1
 			end
 			if innerStroke then
-				innerStroke.Color = Color3.fromRGB(180, 180, 188)
-				innerStroke.Transparency = 0.78
+				innerStroke.Transparency = 1
 			end
 		end
 	end
@@ -4605,7 +4602,7 @@ end)
 	floatingButtonGroup.Name = "DQuickControlPanel"
 	floatingButtonGroup.Size = UDim2.new(0, 182, 0, 350)
 	floatingButtonGroup.Position = UDim2.new(0, 16, 0, 105)
-	floatingButtonGroup.BackgroundColor3 = Color3.fromRGB(6, 8, 14)
+	floatingButtonGroup.BackgroundTransparency = 1
 	floatingButtonGroup.BorderSizePixel = 0
 	floatingButtonGroup.Active = false
 	floatingButtonGroup.Parent = screenGui
@@ -4615,14 +4612,14 @@ end)
 	local panelStroke = Instance.new("UIStroke")
 	panelStroke.Color = Color3.fromRGB(0, 120, 255)
 	panelStroke.Thickness = 2
-	panelStroke.Transparency = 0.08
+	panelStroke.Transparency = 1
 	panelStroke.Parent = floatingButtonGroup
 
 	local innerPanel = Instance.new("Frame")
 	innerPanel.Name = "InnerPanel"
 	innerPanel.Size = UDim2.new(1, -12, 1, -12)
 	innerPanel.Position = UDim2.new(0, 6, 0, 6)
-	innerPanel.BackgroundColor3 = Color3.fromRGB(10, 12, 18)
+	innerPanel.BackgroundTransparency = 1
 	innerPanel.BorderSizePixel = 0
 	innerPanel.Parent = floatingButtonGroup
 	innerPanel.ZIndex = 50
@@ -4633,7 +4630,7 @@ end)
 	dBar.Size = UDim2.new(0, 32, 1, -24)
 	dBar.Position = UDim2.new(0, 10, 0, 12)
 	dBar.BackgroundColor3 = Color3.fromRGB(0, 54, 160)
-	dBar.BackgroundTransparency = 0.68
+	dBar.BackgroundTransparency = 1
 	dBar.BorderSizePixel = 0
 	dBar.Parent = innerPanel
 	dBar.ZIndex = 51
@@ -4644,7 +4641,7 @@ end)
 	dCurve.Size = UDim2.new(0, 126, 1, -24)
 	dCurve.Position = UDim2.new(1, -136, 0, 12)
 	dCurve.BackgroundColor3 = Color3.fromRGB(0, 54, 160)
-	dCurve.BackgroundTransparency = 0.76
+	dCurve.BackgroundTransparency = 1
 	dCurve.BorderSizePixel = 0
 	dCurve.Parent = innerPanel
 	dCurve.ZIndex = 51
@@ -4654,7 +4651,7 @@ end)
 	dCut.Name = "DCut"
 	dCut.Size = UDim2.new(0, 52, 1, -52)
 	dCut.Position = UDim2.new(0, 48, 0, 26)
-	dCut.BackgroundColor3 = Color3.fromRGB(10, 10, 14)
+	dCut.BackgroundTransparency = 1
 	dCut.BorderSizePixel = 0
 	dCut.Parent = innerPanel
 	dCut.ZIndex = 51
